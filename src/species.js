@@ -35,7 +35,10 @@ class Migration {
     this.route.at(sp.open ? clamp(u) : u, this.head);
     this.phase = phaseAt(sp, st.t);
     this.focus = st.focus; this.dim = st.dim; this.reveal = st.reveal; this.hi = st.hi;
-    const vis = (1 - this.dim * 0.82) * this.reveal;
+    // tiny-scale species fade at distance: sub-pixel bundles shimmer and pump the bloom
+    const near = smooth(clamp((2.4 - (st.camDist ?? 0)) / 1.6));
+    const far = this.farFade ?? 1;
+    const vis = (1 - this.dim * 0.82) * this.reveal * lerp(far, 1, near);
     this.visibility = vis;
     for (const r of this.ribbons) {
       r.uniforms.uHead.value = sp.open ? clamp(u) : fract(u);
@@ -278,6 +281,7 @@ export class Wildebeest extends Migration {
   constructor(sp) {
     super(sp);
     this.addRouteLine({ width: 1.2, base: 0.12, trail: 0.3, dash: 60, dashSpeed: 0.6 }, () => 1.0004);
+    this.farFade = 0.35;
     this.N = 7500;
     const r = rng(37);
     this.p = Array.from({ length: this.N }, (_, i) => ({ s: Math.min(1, -Math.log(1 - r() * 0.98) * 0.28), lane: (i % 9) - 4, g: gauss(r), ph: r() * 100, c: r() }));
@@ -399,6 +403,7 @@ export class Caribou extends Migration {
   constructor(sp) {
     super(sp);
     this.strands = 16;
+    this.farFade = 0.12;
     this.off = (j, u) => (j - 7.5) * 0.0011 + 0.0028 * Math.sin(u * Math.PI * 2 * 9 + j * 1.3) + 0.0016 * Math.sin(u * Math.PI * 2 * 23 + j * 2.1);
     for (let j = 0; j < this.strands; j++) {
       const pts = [], us = [];

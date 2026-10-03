@@ -160,9 +160,9 @@ body.leaving .portrait { transition: clip-path 0.7s var(--ease-io), opacity 0.7s
 .callout.right { text-align: right; }
 
 /* month ghost */
-.month-ghost { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: var(--serif); font-style: italic; font-size: 22vw; line-height: 1; color: #fff; opacity: 0; mix-blend-mode: overlay; white-space: nowrap; letter-spacing: -0.04em; }
+.month-ghost { will-change: opacity, letter-spacing; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: var(--serif); font-style: italic; font-size: 22vw; line-height: 1; color: #fff; opacity: 0; mix-blend-mode: overlay; white-space: nowrap; letter-spacing: -0.04em; }
 .month-ghost.show { animation: ghost 2.6s var(--ease-out) forwards; }
-@keyframes ghost { 0% { opacity: 0; letter-spacing: 0.04em; filter: blur(14px); } 25% { opacity: 0.13; filter: blur(0); } 100% { opacity: 0; letter-spacing: -0.06em; filter: blur(6px); } }
+@keyframes ghost { 0% { opacity: 0; letter-spacing: 0.02em; } 30% { opacity: 0.1; } 100% { opacity: 0; letter-spacing: -0.05em; } }
 
 /* cursor readout, warp */
 .cursor-read { position: absolute; left: 0; top: 0; font-size: 9.5px; letter-spacing: 0.16em; color: var(--ink-2); white-space: nowrap; opacity: 0; transition: opacity 0.4s; text-shadow: 0 0 8px #000; }

@@ -14,7 +14,7 @@ const FinalShader = {
     uFocusR: { value: 0.35 },
     uBlur: { value: 0.4 },
     uWarp: { value: 0 },
-    uGrain: { value: 0.055 },
+    uGrain: { value: 0.038 },
     uVignette: { value: 1 },
     uFade: { value: 0 },
     uCA: { value: 1 },

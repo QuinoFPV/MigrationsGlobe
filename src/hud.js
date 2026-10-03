@@ -325,7 +325,10 @@ export class Hud {
       for (const c of Object.values(this.co)) { c.w = c.c.offsetWidth; c.h = c.c.offsetHeight; }
     }
     const m = Math.floor(fract(t / 12) * 12);
-    if (m !== this.lastMonth && f.reveal > 0.9 && f.playing) {
+    // month title: never during time-lapse or scrubbing, and at most every 3 s
+    const calm = f.playing && !f.scrubbing && (f.warp ?? 0) < 0.05;
+    if (m !== this.lastMonth && f.reveal > 0.9 && calm && f.time - (this.ghostT ?? -99) > 3) {
+      this.ghostT = f.time;
       const g = $('month-ghost');
       g.textContent = MONTHS[m];
       g.classList.remove('show'); void g.offsetWidth; g.classList.add('show');

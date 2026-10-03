@@ -441,7 +441,8 @@ function frame(forced) {
     const sel = S.focusId === m.sp.id;
     m.hiS = lerp(m.hiS || 0, (S.hoverId === m.sp.id ? 1 : 0), 1 - Math.exp(-dt * 6));
     const stagger = clamp(routeReveal * 1.6 - i * 0.15);
-    m.update({ t, dt, time, focus: sel ? S.focusMix : 0, dim: S.focusId && !sel ? S.focusMix : 0, reveal: stagger, hi: m.hiS });
+    const camDist = camera.position.distanceTo(_pw.copy(m.head).applyMatrix4(globe.matrixWorld));
+    m.update({ t, dt, time, camDist, focus: sel ? S.focusMix : 0, dim: S.focusId && !sel ? S.focusMix : 0, reveal: stagger, hi: m.hiS });
   });
 
   // ---- HUD ----
@@ -450,7 +451,7 @@ function frame(forced) {
   const gR = (Math.tan(Math.asin(Math.min(0.9999, 1 / d))) / Math.tan((camera.fov * DEG) / 2)) * (H / 2);
   hud.update({
     t, dt, time, reveal: S.reveal, focusMix: S.focusMix, focusId: S.focusId, hoverId: S.hoverId,
-    migs, project, globe: { x: gC.x, y: gC.y, r: gR }, decl, sunLon: S.sunLon, playing: S.playing,
+    migs, project, globe: { x: gC.x, y: gC.y, r: gR }, decl, sunLon: S.sunLon, playing: S.playing, scrubbing: S.scrubbing || S.monthTarget != null, warp: S.warp,
   });
 
   // ---- post ----
