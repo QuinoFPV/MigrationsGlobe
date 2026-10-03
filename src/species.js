@@ -1,0 +1,440 @@
+import * as THREE from 'three';
+import { SphereRoute, keyframeU, latLonToVec, rng, gauss, clamp, smooth, fract, lerp } from './geo.js';
+import { PointCloud, Ribbon, sampleRoute } from './gfx.js';
+import { phaseAt } from './data.js';
+
+const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _f = { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+
+class Migration {
+  constructor(sp) {
+    this.sp = sp;
+    this.group = new THREE.Group();
+    this.route = new SphereRoute(sp.route, { closed: !sp.open });
+    this.head = new THREE.Vector3();
+    this.u = 0; this.vel = 0; this.mv = 0; this.dir = 1;
+    this.focus = 0; this.dim = 0; this.hi = 0; this.reveal = 0;
+    this.ribbons = [];
+    this.clouds = [];
+  }
+  addRouteLine(opts = {}, rFn) {
+    const { pts, us } = sampleRoute(this.route, 700, rFn);
+    const r = new Ribbon(pts, us, { color: this.sp.color, loop: !this.sp.open, ...opts });
+    this.group.add(r.mesh);
+    this.ribbons.push(r);
+    return r;
+  }
+  uAt(t) { return keyframeU(this.sp.keys, t); }
+  baseUpdate(st) {
+    const sp = this.sp;
+    const u = this.uAt(st.t);
+    const du = (this.uAt(st.t + 0.05) - this.uAt(st.t - 0.05)) / 0.1; // loop-units per month
+    this.u = u;
+    this.vel = du;
+    this.mv = THREE.MathUtils.lerp(this.mv, smooth(clamp(Math.abs(du) / 0.06)), 1 - Math.exp(-st.dt * 4));
+    if (Math.abs(du) > 0.004) this.dir = Math.sign(du);
+    this.route.at(sp.open ? clamp(u) : u, this.head);
+    this.phase = phaseAt(sp, st.t);
+    this.focus = st.focus; this.dim = st.dim; this.reveal = st.reveal; this.hi = st.hi;
+    const vis = (1 - this.dim * 0.82) * this.reveal;
+    this.visibility = vis;
+    for (const r of this.ribbons) {
+      r.uniforms.uHead.value = sp.open ? clamp(u) : fract(u);
+      r.uniforms.uDir.value = this.dir;
+      r.uniforms.uOpacity.value = vis;
+      r.uniforms.uDraw.value = smooth(clamp(this.reveal * 1.15)) * 1.01;
+      r.uniforms.uHi.value = Math.max(this.hi, this.focus);
+    }
+    for (const c of this.clouds) c.uniforms.uOpacity.value = vis;
+  }
+  /** fraction of the documented route covered this season */
+  progress() {
+    const u = this.sp.open ? clamp(this.u) : fract(this.u);
+    return u;
+  }
+}
+
+/* ───────────────────────────── Humpback whales ───────────────────────────── */
+const whaleFrag = /* glsl */ `
+uniform float uTime; uniform vec3 uColor; uniform float uOpacity;
+varying vec2 vUv; varying float vSeed; varying float vSurf;
+float seg(vec2 p, vec2 a, vec2 b, float r) {
+  vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+void main() {
+  vec2 p = vUv; p.y = (p.y - 0.5);
+  float beat = sin(uTime * 2.2 + vSeed * 6.0);
+  // body: tapered capsule along x
+  float x = clamp((p.x - 0.08) / 0.86, 0.0, 1.0);
+  float w = 0.105 * pow(sin(3.14159 * pow(x, 0.75)), 0.7);
+  float body = abs(p.y) - w;
+  body = max(body, max(0.08 - p.x, p.x - 0.95));
+  // long pectoral fins — the humpback's signature
+  float fl = 0.34 + 0.03 * sin(uTime * 0.9 + vSeed * 3.0);
+  float pec = min(seg(p, vec2(0.66, 0.06), vec2(0.5, fl), 0.022), seg(p, vec2(0.66, -0.06), vec2(0.5, -fl), 0.022));
+  // flukes
+  float fy = 0.15 * (0.75 + 0.25 * beat);
+  float fluke = min(seg(p, vec2(0.13, 0.0), vec2(0.03, fy), 0.028), seg(p, vec2(0.13, 0.0), vec2(0.03, -fy), 0.028));
+  float d = min(min(body, pec), fluke);
+  float shape = 1.0 - smoothstep(-0.004, 0.012, d);
+  float halo = exp(-max(d, 0.0) * 30.0) * 0.14;
+  float spine = exp(-abs(p.y) * 60.0) * step(0.2, p.x) * step(p.x, 0.9) * 0.6;
+  float a = (shape * (0.32 + spine * 0.5) + halo) * (0.3 + 0.7 * vSurf);
+  gl_FragColor = vec4(uColor * a * uOpacity, 1.0);
+}`;
+
+const ringFrag = /* glsl */ `
+uniform vec3 uColor; uniform float uOpacity;
+varying vec2 vUv; varying float vAge;
+void main() {
+  float r = length(vUv - 0.5) * 2.0;
+  float a = 0.0;
+  for (int i = 0; i < 3; i++) {
+    float rr = vAge - float(i) * 0.12;
+    if (rr > 0.0) a += exp(-pow((r - rr) / 0.006, 2.0)) * (1.0 - rr) * (1.0 - float(i) * 0.3);
+  }
+  a *= smoothstep(1.0, 0.85, vAge);
+  gl_FragColor = vec4(uColor * a * 0.45 * uOpacity, 1.0);
+}`;
+
+export class Whales extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.4, base: 0.1, trail: 0.22, dash: 220, dashSpeed: 1.5 }, () => 1.0012);
+    this.n = 7;
+    const r = rng(11);
+    this.pod = Array.from({ length: this.n }, (_, i) => ({
+      along: i === 6 ? 0.004 : r() * 0.03, side: gauss(r) * 0.01, seed: r(), size: i === 6 ? 0.55 : 0.85 + r() * 0.3,
+      pos: new THREE.Vector3(), fwd: new THREE.Vector3(1, 0, 0), init: false,
+    }));
+    const quad = new THREE.PlaneGeometry(1, 1);
+    const seeds = new Float32Array(this.n), surf = new Float32Array(this.n);
+    this.aSurf = new THREE.InstancedBufferAttribute(surf, 1);
+    quad.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds.map((_, i) => this.pod[i].seed), 1));
+    quad.setAttribute('aSurf', this.aSurf);
+    this.wu = { uTime: Ribbon.time, uColor: { value: new THREE.Vector3(...sp.color) }, uOpacity: { value: 1 } };
+    this.mesh = new THREE.InstancedMesh(quad, new THREE.ShaderMaterial({
+      uniforms: this.wu,
+      vertexShader: /* glsl */ `
+        attribute float aSeed; attribute float aSurf; varying vec2 vUv; varying float vSeed; varying float vSurf;
+        void main(){ vUv = uv; vSeed = aSeed; vSurf = aSurf; gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position,1.0);} `,
+      fragmentShader: whaleFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    }), this.n);
+    this.mesh.frustumCulled = false;
+    this.group.add(this.mesh);
+
+    // song rings
+    this.ringN = 10;
+    const rq = new THREE.PlaneGeometry(1, 1);
+    this.aAge = new THREE.InstancedBufferAttribute(new Float32Array(this.ringN).fill(2), 1);
+    rq.setAttribute('aAge', this.aAge);
+    this.ru = { uColor: { value: new THREE.Vector3(...sp.color) }, uOpacity: { value: 1 } };
+    this.rings = new THREE.InstancedMesh(rq, new THREE.ShaderMaterial({
+      uniforms: this.ru,
+      vertexShader: /* glsl */ `attribute float aAge; varying vec2 vUv; varying float vAge;
+        void main(){ vUv = uv; vAge = aAge; gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position,1.0);} `,
+      fragmentShader: ringFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    }), this.ringN);
+    this.rings.frustumCulled = false;
+    this.ringData = Array.from({ length: this.ringN }, () => ({ age: 2, pos: new THREE.Vector3(), scale: 0.05 }));
+    this.ringTimer = 0; this.ringIdx = 0;
+    this.group.add(this.rings);
+
+    // wakes + bubble nets
+    this.wakeLen = 36;
+    this.wake = new PointCloud(this.n * this.wakeLen + 600, { minPx: 1 });
+    this.hist = this.pod.map(() => []);
+    this.group.add(this.wake.points);
+    this.clouds.push(this.wake);
+    this.bub = Array.from({ length: 600 }, () => ({ a: Math.random() * 6.28, r: Math.random(), life: Math.random() }));
+    this.m4 = new THREE.Matrix4(); this.basis = new THREE.Matrix4();
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const vis = this.visibility;
+    this.wu.uOpacity.value = vis; this.ru.uOpacity.value = vis;
+    const u = this.u, time = st.time;
+    const breeding = this.phase[2] === 'Breeding', feeding = this.phase[2] === 'Feeding';
+    const center = this.route.frame(u, _f);
+    const cP = center.p.clone(), cT = center.t.clone(), cS = center.s.clone(), cN = center.n.clone();
+    const sc = 0.021;
+    this.pod.forEach((w, i) => {
+      // travelling formation along the route…
+      this.route.frame(u - w.along * this.dir, _f);
+      const travel = _f.p.clone().addScaledVector(_f.s, w.side + Math.sin(time * 0.5 + w.seed * 9) * 0.0025);
+      // …or a bubble-net spiral / slow breeding drift when stationary
+      const ang = time * (feeding ? 0.55 : 0.12) * (i % 2 ? 1 : -1) + w.seed * 6.28;
+      const rad = feeding ? 0.011 + 0.004 * Math.sin(time * 0.3 + i) : 0.008 + w.seed * 0.014;
+      const circle = cP.clone().addScaledVector(cT, Math.cos(ang) * rad).addScaledVector(cS, Math.sin(ang) * rad);
+      const target = circle.lerp(travel, this.mv).normalize().multiplyScalar(1.0015);
+      if (!w.init) { w.pos.copy(target); w.init = true; }
+      const prev = w.pos.clone();
+      w.pos.lerp(target, 1 - Math.exp(-st.dt * 5));
+      const mvDir = w.pos.clone().sub(prev);
+      const n = w.pos.clone().normalize();
+      if (mvDir.lengthSq() > 1e-12) w.fwd.lerp(mvDir.normalize(), 0.15);
+      w.fwd.addScaledVector(n, -w.fwd.dot(n)).normalize();
+      const side = new THREE.Vector3().crossVectors(n, w.fwd);
+      this.basis.makeBasis(w.fwd, side, n);
+      const s = sc * w.size;
+      this.m4.copy(this.basis).scale(_v.set(s, s, 1)).setPosition(w.pos);
+      this.mesh.setMatrixAt(i, this.m4);
+      this.aSurf.array[i] = 0.5 + 0.5 * Math.sin(time * 0.4 + w.seed * 20);
+      // wake history
+      const h = this.hist[i];
+      if (!h.length || h[0].distanceToSquared(w.pos) > 0.000002) { h.unshift(w.pos.clone()); if (h.length > this.wakeLen) h.pop(); }
+      for (let k = 0; k < this.wakeLen; k++) {
+        const p = h[Math.min(k, h.length - 1)] || w.pos;
+        const f = 1 - k / this.wakeLen;
+        this.wake.set(i * this.wakeLen + k, p, 0.0022 * (0.5 + f), 0.25 * f * f, 0.5, 0.95, 1);
+      }
+    });
+    this.mesh.instanceMatrix.needsUpdate = true;
+    this.aSurf.needsUpdate = true;
+
+    // bubble nets rise in spirals when feeding
+    const base = this.n * this.wakeLen;
+    this.bub.forEach((b, k) => {
+      b.life += st.dt * 0.25;
+      if (b.life > 1) { b.life = 0; b.a = Math.random() * 6.28; b.r = Math.random(); }
+      const rr = (0.004 + b.r * 0.014) * (1 - b.life * 0.3);
+      const a = b.a + b.life * 2;
+      _v.copy(cP).addScaledVector(cT, Math.cos(a) * rr).addScaledVector(cS, Math.sin(a) * rr).normalize().multiplyScalar(1.0016);
+      const on = feeding ? (1 - this.mv) : 0;
+      this.wake.set(base + k, _v, 0.0009, on * 0.6 * Math.sin(b.life * Math.PI), 0.8, 1, 1);
+    });
+    this.wake.commit();
+
+    // song rings
+    this.ringTimer -= st.dt;
+    if (this.ringTimer <= 0 && vis > 0.05) {
+      this.ringTimer = breeding ? 0.9 + Math.random() * 0.6 : 2.8 + Math.random() * 2;
+      const r = this.ringData[this.ringIdx++ % this.ringN];
+      r.age = 0; r.pos.copy(this.pod[Math.floor(Math.random() * this.n)].pos); r.scale = breeding ? 0.16 : 0.1;
+    }
+    this.ringData.forEach((r, i) => {
+      r.age += st.dt * 0.32;
+      const n = r.pos.clone().normalize();
+      const t = new THREE.Vector3(0, 1, 0).cross(n).normalize();
+      const b = new THREE.Vector3().crossVectors(n, t);
+      this.basis.makeBasis(t, b, n);
+      this.m4.copy(this.basis).scale(_v.set(r.scale, r.scale, 1)).setPosition(r.pos.clone().multiplyScalar(1.0008 / r.pos.length()));
+      this.rings.setMatrixAt(i, this.m4);
+      this.aAge.array[i] = r.age;
+    });
+    this.rings.instanceMatrix.needsUpdate = true;
+    this.aAge.needsUpdate = true;
+  }
+}
+
+/* ───────────────────────────── Arctic terns ───────────────────────────── */
+export class Terns extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.alt = (u) => 1.006 + 0.006 * Math.sin(u * Math.PI * 2 * 3) ** 2;
+    this.routeR = this.alt;
+    this.addRouteLine({ width: 1.1, base: 0.07, trail: 0.12, dash: 900, dashSpeed: 6 }, (u) => this.alt(u));
+    this.N = 2600;
+    const r = rng(23);
+    this.p = Array.from({ length: this.N }, () => ({ s: r(), g: gauss(r), v: gauss(r), ph: r(), sp: 0.6 + r() * 0.8 }));
+    this.cloud = new PointCloud(this.N, { minPx: 1.1 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, time = st.time, mv = this.mv, dir = this.dir;
+    const span = 0.045;
+    const fh = this.route.frame(u, { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() });
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      // streaming comet: particles flow toward the head and respawn at the tail
+      const s = fract(q.s + time * 0.06 * q.sp);
+      const back = Math.pow(1 - s, 1.7) * span;
+      const uu = u - back * dir;
+      this.route.frame(uu, _f);
+      const width = 0.0025 + 0.012 * (1 - s);
+      _v.copy(_f.p).addScaledVector(_f.s, q.g * width + Math.sin(time * 1.3 + q.ph * 40) * 0.0012)
+        .normalize().multiplyScalar(this.alt(uu) + q.v * 0.0012);
+      // murmuration when resting
+      const a = time * (0.5 + q.sp * 0.6) + q.ph * 6.283;
+      const rad = 0.006 + Math.abs(q.g) * 0.008 + Math.sin(time * 0.7 + q.s * 12) * 0.003;
+      const tilt = Math.sin(q.ph * 12 + time * 0.2);
+      _w.copy(fh.p).addScaledVector(fh.t, Math.cos(a) * rad).addScaledVector(fh.s, Math.sin(a) * rad * (0.6 + 0.4 * tilt))
+        .normalize().multiplyScalar(1.008 + Math.sin(a * 2 + q.v) * 0.002 + q.v * 0.001);
+      _v.lerp(_w, 1 - mv);
+      const bright = 0.35 + 0.65 * (mv > 0.5 ? s : 0.7);
+      this.cloud.set(i, _v, 0.0016 * (0.6 + 0.6 * s), bright, 0.9, 0.95, 1.0);
+    }
+    this.cloud.commit();
+  }
+}
+
+/* ───────────────────────────── Wildebeest ───────────────────────────── */
+const MARA = latLonToVec(-1.58, 34.86, 1.0006);
+const GRUMETI = latLonToVec(-2.15, 34.4, 1.0006);
+
+export class Wildebeest extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.2, base: 0.12, trail: 0.3, dash: 60, dashSpeed: 0.6 }, () => 1.0004);
+    this.N = 7500;
+    const r = rng(37);
+    this.p = Array.from({ length: this.N }, (_, i) => ({ s: Math.min(1, -Math.log(1 - r() * 0.98) * 0.28), lane: (i % 9) - 4, g: gauss(r), ph: r() * 100, c: r() }));
+    this.herd = new PointCloud(this.N, { minPx: 0.8, shape: 'hard', blending: THREE.NormalBlending });
+    this.dustN = 500;
+    this.dust = new PointCloud(this.dustN, { minPx: 1 });
+    this.dp = Array.from({ length: this.dustN }, () => ({ s: r(), g: gauss(r), ph: r() * 10 }));
+    this.splashN = 260;
+    this.splash = new PointCloud(this.splashN, { minPx: 1 });
+    this.sp2 = Array.from({ length: this.splashN }, () => ({ life: Math.random(), a: Math.random() * 6.28, r: Math.random() }));
+    this.group.add(this.dust.points, this.herd.points, this.splash.points);
+    this.clouds.push(this.herd, this.dust, this.splash);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, time = st.time, mv = this.mv, dir = this.dir;
+    const len = lerp(0.045, 0.15, mv);
+    const spread = lerp(3.2, 1, mv);
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      const uu = u - q.s * len * dir;
+      this.route.frame(uu, _f);
+      const braid = Math.sin(q.s * 50 + q.lane * 1.7 + time * 0.15) * 0.0007;
+      const lat = (q.lane * 0.0011 + q.g * 0.0006) * spread + braid;
+      const graze = Math.sin(time * 0.4 + q.ph) * 0.00025 * (1.2 - mv);
+      _v.copy(_f.p).addScaledVector(_f.s, lat + graze).addScaledVector(_f.t, Math.cos(time * 0.3 + q.ph) * 0.0003 * (1.2 - mv))
+        .normalize().multiplyScalar(1.0004);
+      const dens = 1 - q.s * 0.6;
+      // mostly dark bodies, a few catching the low sun
+      const glint = q.c > 0.82;
+      if (glint) this.herd.set(i, _v, 0.00012, 0.95 * dens, 0.95, 0.66, 0.34);
+      else this.herd.set(i, _v, 0.0001, 0.88 * dens, 0.075 + q.c * 0.05, 0.05 + q.c * 0.03, 0.03);
+    }
+    this.herd.commit();
+    for (let i = 0; i < this.dustN; i++) {
+      const d = this.dp[i];
+      const age = fract(d.s + time * 0.05);
+      const uu = u - (0.2 + age * 0.8) * len * dir;
+      this.route.frame(uu, _f);
+      _v.copy(_f.p).addScaledVector(_f.s, d.g * 0.006 * spread * (0.5 + age)).normalize().multiplyScalar(1.0008 + age * 0.0015);
+      this.dust.set(i, _v, 0.0005 + age * 0.0008, 0.022 * Math.sin(age * Math.PI) * (0.25 + mv), 0.9, 0.7, 0.5);
+    }
+    this.dust.commit();
+    // river crossings: splashes at the Mara (Jul–Sep) and Grumeti (Jun)
+    const nearMara = smooth(clamp(1 - Math.abs(fract(u) - 0.57) / 0.06));
+    const nearGrum = smooth(clamp(1 - Math.abs(fract(u) - 0.27) / 0.04)) * 0.6;
+    const on = Math.max(nearMara, nearGrum);
+    const site = nearMara >= nearGrum ? MARA : GRUMETI;
+    const n = site.clone().normalize(), t = new THREE.Vector3(0, 1, 0).cross(n).normalize(), b = new THREE.Vector3().crossVectors(n, t);
+    for (let i = 0; i < this.splashN; i++) {
+      const s = this.sp2[i];
+      s.life += st.dt * (0.8 + s.r);
+      if (s.life > 1) { s.life = 0; s.a = Math.random() * 6.28; s.r = Math.random(); }
+      const rr = s.life * 0.0025 * (0.4 + s.r);
+      _v.copy(site).addScaledVector(t, Math.cos(s.a) * rr + (s.r - 0.5) * 0.004).addScaledVector(b, Math.sin(s.a) * rr * 0.5)
+        .normalize().multiplyScalar(1.0006 + Math.sin(s.life * Math.PI) * 0.0006);
+      this.splash.set(i, _v, 0.00014, on * (1 - s.life) * 0.9, 0.85, 0.95, 1);
+    }
+    this.splash.commit();
+  }
+}
+
+/* ───────────────────────────── Monarchs ───────────────────────────── */
+const SITES = [[19.6, -100.25], [19.68, -100.3], [19.54, -100.22], [19.35, -100.15]];
+const GEN = [[1.0, 0.22, 0.02], [1.0, 0.34, 0.04], [1.0, 0.48, 0.08], [1.0, 0.36, 0.04]];
+
+export class Monarchs extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.2, base: 0.06, trail: 0, dash: 120, dashSpeed: 1.2 }, () => 1.0015);
+    this.N = 3600;
+    const r = rng(53);
+    this.p = Array.from({ length: this.N }, () => {
+      // summer range weighted to the Corn Belt and Great Lakes
+      const lat = 37 + r() * 11 + gauss(r) * 1.2;
+      const lon = -97 + Math.pow(r(), 0.8) * 27;
+      const site = SITES[Math.floor(r() * SITES.length)];
+      return {
+        P0: latLonToVec(lat, lon),
+        P1: latLonToVec(31 + gauss(r) * 2.2, -97.8 + gauss(r) * 2.5),
+        P2: latLonToVec(site[0] + gauss(r) * 0.05, site[1] + gauss(r) * 0.05),
+        d: r() * 0.28, ph: r() * 100, flap: 18 + r() * 14, w: gauss(r),
+      };
+    });
+    this.cloud = new PointCloud(this.N, { minPx: 1 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+    this.a = new THREE.Vector3(); this.b = new THREE.Vector3();
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = clamp(this.u), time = st.time;
+    const spring = st.t > 2 && st.t < 7;
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      const ui = smooth(clamp((u - q.d) / 0.72));
+      this.a.copy(q.P0).lerp(q.P1, ui);
+      this.b.copy(q.P1).lerp(q.P2, ui);
+      _v.copy(this.a).lerp(this.b, ui);
+      const flying = Math.sin(ui * Math.PI);
+      const flut = 0.0035 * flying + 0.0012;
+      _v.x += Math.sin(time * 0.9 + q.ph) * flut; _v.y += Math.cos(time * 0.7 + q.ph * 1.3) * flut * 0.6; _v.z += Math.sin(time * 0.8 + q.ph * 0.7) * flut;
+      // overwintering clusters: dense, shimmering on sunny afternoons
+      const roost = smooth(clamp((ui - 0.93) / 0.07));
+      const sunny = Math.max(0, Math.sin(time * 0.25 + q.ph)) ** 6;
+      _v.normalize().multiplyScalar(1.0012 + flying * 0.004 + roost * sunny * 0.002);
+      const flap = Math.abs(Math.sin(time * q.flap + q.ph));
+      const gen = spring ? Math.min(3, Math.floor((1 - ui) * 3.2)) : 3;
+      const c = GEN[gen];
+      const alpha = (0.45 + 0.75 * flap) * (roost > 0.5 ? 0.55 + sunny * 0.6 : 1.1);
+      this.cloud.set(i, _v, 0.0019 * (0.45 + 0.55 * flap), alpha, c[0], c[1], c[2]);
+    }
+    this.cloud.commit();
+  }
+}
+
+/* ───────────────────────────── Caribou ───────────────────────────── */
+export class Caribou extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.strands = 16;
+    this.off = (j, u) => (j - 7.5) * 0.0011 + 0.0028 * Math.sin(u * Math.PI * 2 * 9 + j * 1.3) + 0.0016 * Math.sin(u * Math.PI * 2 * 23 + j * 2.1);
+    for (let j = 0; j < this.strands; j++) {
+      const pts = [], us = [];
+      for (let i = 0; i <= 900; i++) {
+        const u = i / 900;
+        this.route.frame(u, _f);
+        pts.push(_f.p.clone().addScaledVector(_f.s, this.off(j, u)).normalize().multiplyScalar(1.0005));
+        us.push(u);
+      }
+      const r = new Ribbon(pts, us, { color: [1.0, 0.76, 0.45], width: 1.3, base: 0.035, trail: 0.42, loop: true, glow: 0.9 });
+      this.group.add(r.mesh);
+      this.ribbons.push(r);
+    }
+    this.N = 3000;
+    const r = rng(71);
+    this.p = Array.from({ length: this.N }, (_, i) => ({ j: i % this.strands, s: Math.min(1, -Math.log(1 - r() * 0.97) * 0.3), g: gauss(r), ph: r() * 50 }));
+    this.cloud = new PointCloud(this.N, { minPx: 0.8, shape: 'hard', blending: THREE.NormalBlending });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, time = st.time, mv = this.mv, dir = this.dir;
+    const len = lerp(0.035, 0.13, mv);
+    const spread = lerp(3.6, 1.2, mv);
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      const uu = u - q.s * len * dir;
+      this.route.frame(uu, _f);
+      const lat = this.off(q.j, fract(uu)) * spread + q.g * 0.0006 * spread;
+      _v.copy(_f.p).addScaledVector(_f.s, lat + Math.sin(time * 0.3 + q.ph) * 0.0003 * (1.1 - mv))
+        .addScaledVector(_f.t, Math.cos(time * 0.25 + q.ph) * 0.0004 * (1.1 - mv)).normalize().multiplyScalar(1.0006);
+      this.cloud.set(i, _v, 0.00036, 0.95 * (1 - q.s * 0.4), 0.09 + (i % 7) * 0.012, 0.075 + (i % 5) * 0.008, 0.065);
+    }
+    this.cloud.commit();
+  }
+}
+
+export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou };

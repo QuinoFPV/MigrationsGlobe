@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Great Migrations</title>
+  <meta name="description" content="An interactive atlas of the planet's great animal migrations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="gl" aria-label="Interactive globe of animal migrations"></canvas>
+
+  <svg id="hud-svg" aria-hidden="true">
+    <defs>
+      <mask id="globe-mask" maskUnits="userSpaceOnUse">
+        <rect x="-5000" y="-5000" width="10000" height="10000" fill="#fff" />
+        <circle id="globe-mask-circle" cx="0" cy="0" r="0" fill="#000" />
+      </mask>
+      <linearGradient id="ticker-fade" gradientUnits="userSpaceOnUse" x1="0" x2="1000" y1="0" y2="0">
+        <stop offset="0" stop-color="#fff" stop-opacity="0" />
+        <stop offset="0.22" stop-color="#fff" stop-opacity="0.85" />
+        <stop offset="0.5" stop-color="#fff" stop-opacity="1" />
+        <stop offset="0.78" stop-color="#fff" stop-opacity="0.85" />
+        <stop offset="1" stop-color="#fff" stop-opacity="0" />
+      </linearGradient>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="3" result="b" />
+        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
+      <path id="ticker-path" d="" />
+      <path id="route-path" d="" />
+      <path id="band-path" d="" />
+    </defs>
+    <g id="ring-back" mask="url(#globe-mask)"></g>
+    <g id="pings"></g>
+    <g id="beacons"></g>
+    <g id="leaders"></g>
+    <text id="route-text" class="route-text"><textPath href="#route-path" id="route-textpath" startOffset="0"></textPath></text>
+    <g id="ring-front"></g>
+    <text id="ticker" class="ticker"><textPath href="#ticker-path" id="ticker-textpath" startOffset="0"></textPath></text>
+    <text id="band-text" class="band-text"><textPath href="#band-path" id="band-textpath" startOffset="50%" text-anchor="middle"></textPath></text>
+  </svg>
+
+  <div id="hud">
+    <div class="month-ghost" id="month-ghost"></div>
+
+    <header class="brand" id="brand">
+      <div class="eyebrow mono">Atlas of Movement <span class="sep">/</span> Vol. MMXXVI</div>
+      <h1 class="title serif"><span>The Great</span> <em>Migrations</em></h1>
+    </header>
+
+    <div class="telemetry mono" id="telemetry">
+      <div class="row"><span class="k">UTC</span><span class="v" id="t-utc">00:00:00</span></div>
+      <div class="date serif" id="t-date">1 January</div>
+      <div class="row"><span class="k">Solar declination</span><span class="v" id="t-decl">0.00°</span></div>
+      <div class="row"><span class="k">Subsolar meridian</span><span class="v" id="t-sublon">0.00°</span></div>
+      <div class="row motion"><span class="k">Animals in transit</span><span class="v big" id="t-motion">0</span></div>
+      <button class="play mono" id="btn-play" aria-label="Pause time">❚❚ <span>Pause</span></button>
+    </div>
+
+    <nav class="index" id="index" aria-label="Species"></nav>
+
+    <div id="labels"></div>
+
+    <button class="back mono" id="btn-back" aria-label="Back to all migrations"><span class="arr">←</span> All migrations <kbd>esc</kbd></button>
+
+    <section class="focus" id="focus" aria-live="polite">
+      <figure class="portrait" id="portrait"><img alt="" id="portrait-img" /><figcaption class="mono" id="portrait-cap"></figcaption></figure>
+      <div class="focus-head">
+        <div class="f-index mono" id="f-index"></div>
+        <h2 class="f-name serif" id="f-name"></h2>
+        <div class="f-latin serif" id="f-latin"></div>
+        <div class="f-stock mono" id="f-stock"></div>
+        <p class="f-blurb" id="f-blurb"></p>
+      </div>
+      <div class="f-data" id="f-data"></div>
+      <div class="f-nav mono"><button id="btn-prev" aria-label="Previous species">←</button><span id="f-count">01 / 05</span><button id="btn-next" aria-label="Next species">→</button></div>
+    </section>
+
+    <div id="callouts"></div>
+
+    <div class="cursor-read mono" id="cursor-read"></div>
+    <div class="warp mono" id="warp"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" /></svg><span>Time-lapse</span></div>
+
+    <div class="hints mono" id="hints">
+      <span>Drag to spin</span><span>Hold to fast-forward time</span><span>Drag the orbit to change month</span><span>1–5 · Species</span>
+    </div>
+
+    <div class="now mono" id="now"></div>
+  </div>
+
+  <div id="intro">
+    <div class="intro-inner">
+      <div class="intro-eyebrow mono" id="intro-eyebrow">Tracking five journeys across one year</div>
+      <div class="intro-title serif" id="intro-title">The Great Migrations</div>
+      <div class="intro-cta mono" id="intro-cta">Click anywhere to begin</div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
