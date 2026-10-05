@@ -214,6 +214,134 @@ export const SPECIES = [
     labelAngle: 0.5,
     blurb: 'The Gwichʼin call the coastal plain "the sacred place where life begins." Every spring the herd walks there on trails worn into the tundra over thousands of years.',
   },
+  {
+    id: 'swallow',
+    index: '06',
+    name: 'Barn Swallow',
+    latin: 'Hirundo rustica',
+    stock: 'Italian breeding population',
+    color: [0.56, 0.64, 1.0],
+    css: '#93a6ff',
+    portrait: 'img/swallow.jpg',
+    verb: 'scatter',
+    route: [
+      [45.4, 10.2], [42.6, 12.6], [39.2, 15.4], [36.6, 11.4], [32, 9.6], [25, 8.6], [17, 8.2], [10, 8.4], [6.6, 8.8],
+      [5.2, 6.2], [8, 4], [14, 3.5], [22, 6], [29, 8.4], [33.4, 10.6], [37.6, 13.4], [41.6, 13.6], [44.6, 11.8],
+    ],
+    keys: [[0, 0.49], [1.7, 0.5], [2.6, 0.7], [3.3, 0.9], [3.6, 1.0], [7.8, 1.0], [8.4, 1.08], [9.0, 1.13], [10.0, 1.36], [10.6, 1.47], [12, 1.49]],
+    phases: [
+      [0, 1.7, 'Wintering', 'Roosting by the million in Nigerian reedbeds'],
+      [1.7, 3.6, 'Northbound', 'Over the Sahara, then a night crossing of the sea'],
+      [3.6, 7.8, 'Breeding', 'Two broods under Italian farm roofs'],
+      [7.8, 10.6, 'Southbound', 'Fattening on insects before the desert'],
+      [10.6, 12, 'Wintering', 'Following the rains across West Africa'],
+    ],
+    ends: [
+      { u: 0, title: 'Breeding grounds', place: 'Po Valley farmsteads, Italy', window: 'APR — AUG' },
+      { u: 0.49, title: 'Winter roost', place: 'Boje reedbeds, Nigeria', window: 'NOV — FEB' },
+    ],
+    distanceKm: 5500,
+    distanceNote: 'one way · across the sea and the Sahara',
+    population: 1800000,
+    popNote: 'est. adults breeding in Italy',
+    trend: '−1.9% / yr',
+    status: 'LC',
+    statusNote: 'Least Concern, but falling steeply across Europe',
+    threats: ['Loss of open stables and old farm buildings', 'Pesticides wiping out insect prey', 'Drought in the Sahel stopover belt', 'Trapping at winter roosts'],
+    medium: 'air',
+    observers: ['Ringing station Ventotene', 'Progetto Piccole Isole', 'eBird checklist', 'Roost count, Boje', 'Geolocator HR-', 'EURING recovery #'],
+    unit: 'swallows',
+    countRange: [5, 120000],
+    focus: { lat: 26, lon: 9.5, alt: 1.75, tilt: 6, k: 0.6, fov: 33 },
+    labelAngle: 0,
+    blurb: 'Each spring a bird weighing less than a letter returns to the same Italian barn it left in September, after crossing the Sahara twice and the Mediterranean in a single night.',
+  },
+  {
+    id: 'tuna',
+    index: '07',
+    name: 'Atlantic Bluefin Tuna',
+    latin: 'Thunnus thynnus',
+    stock: 'Eastern Atlantic & Mediterranean stock',
+    color: [1.0, 0.36, 0.48],
+    css: '#ff6f8a',
+    portrait: 'img/tuna.jpg',
+    verb: 'school',
+    route: [
+      [63, 2], [58, -8], [52, -12.5], [46, -8], [41, -11], [36.6, -9.5], [35.97, -5.6], [36.1, -3], [37, -0.8], [38.75, 2.4],
+      [38.8, 6], [38.55, 8.8], [38.3, 11.3], [38.7, 13.6], [39.6, 13.2], [37.3, 11.7], [37.6, 6], [37.2, 1], [36.3, -2],
+      [35.92, -5.7], [37, -10.5], [43, -12.5], [49, -13.5], [55, -11], [60, -6],
+    ],
+    keys: [[0, 0.27], [3.6, 0.3], [4.4, 0.335], [5.2, 0.41], [6.9, 0.505], [7.6, 0.671], [8.3, 0.774], [9.0, 0.95], [10.2, 1.03], [11.2, 1.2], [12, 1.27]],
+    phases: [
+      [0, 3.6, 'Atlantic winter', 'Deep feeding off Iberia and Morocco'],
+      [3.6, 5.2, 'Into the Mediterranean', 'Through the Strait of Gibraltar'],
+      [5.2, 6.9, 'Spawning', 'Warm fronts off the Balearics and Sicily'],
+      [6.9, 8.3, 'Exit', 'Back out past Gibraltar'],
+      [8.3, 10.2, 'North Atlantic feast', 'Herring and mackerel off Norway'],
+      [10.2, 12, 'Southbound', 'Down the Bay of Biscay'],
+    ],
+    ends: [
+      { u: 0.45, title: 'Spawning grounds', place: 'Balearic Sea & Tyrrhenian', window: 'JUN — JUL' },
+      { u: 0.985, title: 'Feeding grounds', place: 'Norwegian Sea', window: 'SEP — OCT' },
+    ],
+    distanceKm: 11000,
+    distanceNote: 'per year · Norway to Sicily and back',
+    population: 1200000,
+    popNote: 'est. spawning adults, eastern stock',
+    trend: '+5.2% / yr',
+    status: 'LC',
+    statusNote: 'Least Concern since 2021: a fishing-quota recovery',
+    threats: ['Illegal and unreported catch', 'Warming shifting the spawning fronts', 'Juveniles taken for fattening farms', 'Longline bycatch'],
+    medium: 'sea',
+    observers: ['Tonnara di Carloforte', 'ICCAT tag #', 'Pop-up satellite tag BFT-', 'Aerial survey, Balearics', 'Spotter plane log', 'Fishing vessel observer'],
+    unit: 'tuna',
+    countRange: [3, 900],
+    focus: { lat: 47, lon: -1, alt: 1.45, tilt: 8, k: 0.7, fov: 33 },
+    labelAngle: 0,
+    blurb: 'A warm-blooded torpedo that can top 600 kg and 70 km/h. Every summer the eastern stock squeezes through the 14 km Strait of Gibraltar to spawn in the warm Mediterranean.',
+  },
+  {
+    id: 'buzzard',
+    index: '08',
+    name: 'Honey Buzzard',
+    latin: 'Pernis apivorus',
+    stock: 'European breeders · Messina flyway',
+    color: [0.95, 0.83, 0.42],
+    css: '#f2d470',
+    portrait: 'img/buzzard.jpg',
+    verb: 'kettle',
+    route: [
+      [3, 16], [10, 15], [18, 13], [27, 11], [33, 10.4], [37.0, 11.0], [38.0, 12.4], [38.25, 15.6], [40.5, 16.2], [43, 13.2],
+      [46.5, 11.5], [48.5, 11], [47, 6], [44, 2], [40, -3], [36, -5.6], [30, -7.5], [22, -9], [14, -7], [8, 2], [4, 10],
+    ],
+    keys: [[0, 0], [3.0, 0.02], [3.7, 0.21], [4.0, 0.3], [4.25, 0.34], [4.9, 0.43], [7.7, 0.44], [8.6, 0.584], [9.3, 0.78], [10.0, 0.98], [12, 1.0]],
+    phases: [
+      [0, 3.0, 'Wintering', 'Raiding wasp nests in Central African forest'],
+      [3.0, 4.9, 'Spring passage', 'Kettles over Cap Bon, Marettimo and Messina'],
+      [4.9, 7.7, 'Breeding', 'Digging out wasp combs in European woods'],
+      [7.7, 10.0, 'Autumn passage', 'South-west to Gibraltar on thermals'],
+      [10.0, 12, 'Wintering', 'Back in the Congo basin'],
+    ],
+    ends: [
+      { u: 0.332, title: 'Spring bottleneck', place: 'Strait of Messina, Italy', window: 'APR — MAY' },
+      { u: 0, title: 'Wintering forests', place: 'Congo basin', window: 'OCT — MAR' },
+    ],
+    distanceKm: 7000,
+    distanceNote: 'one way · soaring, rarely flapping',
+    population: 330000,
+    popNote: 'est. adults breeding in Europe',
+    trend: 'stable',
+    status: 'LC',
+    statusNote: 'Least Concern; still shot illegally at bottlenecks',
+    threats: ['Illegal shooting at migration bottlenecks', 'Wind farms on soaring ridges', 'Loss of wasp-rich woodland', 'Land-use change in the Sahel'],
+    medium: 'air',
+    observers: ['MEDRAPTORS count, Messina', 'Hawk-watch, Capo Peloro', 'Satellite tag PA-', 'LIPU volunteers', 'Ringing station Marettimo', 'Trektellen count'],
+    unit: 'raptors',
+    countRange: [2, 1400],
+    focus: { lat: 39.5, lon: 12.5, alt: 1.0, tilt: 16, k: 0.85, fov: 33 },
+    labelAngle: 0,
+    blurb: 'A raptor that eats wasp grubs. It cannot cross open sea on flapping power, so each spring tens of thousands funnel over the Strait of Messina, climbing every thermal they find.',
+  },
 ];
 
 export const STATUS_SCALE = ['LC', 'NT', 'VU', 'EN', 'CR'];
@@ -230,6 +358,19 @@ export function conditionsAt(sp, lat, t) {
   // hemisphere-aware seasonal cycle: +1 ≈ local midsummer
   const season = Math.cos(((m - 6.5) / 12) * Math.PI * 2) * Math.sign(lat || 1);
   const a = Math.abs(lat);
+  if (sp.id === 'tuna') {
+    const sst = 27 - 0.0058 * a * a + season * 4.2;
+    return { label: 'Sea surface', value: `${Math.max(4, sst).toFixed(1)}°C`, extra: sst >= 23.5 ? 'Above 24°C spawning threshold' : sst < 13 ? 'Herring & mackerel shoals' : 'Thermal front · 1.6 m swell' };
+  }
+  if (sp.id === 'swallow') {
+    const temp = 31 - Math.max(0, a - 20) * 0.6 + season * 7;
+    const desert = a > 14 && a < 31;
+    return { label: 'Air temperature', value: `${temp.toFixed(0)}°C`, extra: desert ? `Sahara crossing · headwind ${(12 + (m * 5) % 11).toFixed(0)} km/h` : 'Insect swarms over water' };
+  }
+  if (sp.id === 'buzzard') {
+    const lift = 1.1 + Math.max(0, season) * 1.8 + (a < 36 ? 0.9 : 0);
+    return { label: 'Thermal lift', value: `+${lift.toFixed(1)} m/s`, extra: `Cloud base ${Math.round(900 + lift * 420)} m · ${lift > 2.4 ? 'kettles forming' : 'weak thermals'}` };
+  }
   if (sp.medium === 'sea') {
     const sst = 28.5 - 0.0062 * a * a - (a > 55 ? (a - 55) * 0.18 : 0) + season * (a > 10 ? 2.6 : 0.6);
     return { label: 'Sea surface', value: `${Math.max(-1.8, sst).toFixed(1)}°C`, extra: sst < 4 ? 'Krill bloom index · high' : sst > 24 ? 'Warm-pool calm · 0.8 m swell' : 'Humboldt upwelling · 2.4 m swell' };

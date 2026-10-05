@@ -442,4 +442,143 @@ export class Caribou extends Migration {
   }
 }
 
-export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou };
+
+/* ───────────────────────────── Barn swallows ───────────────────────────── */
+export class Swallows extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.1, base: 0.06, trail: 0.16, dash: 500, dashSpeed: 3 }, () => 1.003);
+    this.N = 1100;
+    this.T = 3; // head + two trailing samples give each bird a short streak
+    const r = rng(83);
+    this.p = Array.from({ length: this.N }, () => ({ s: r(), g: gauss(r), h: gauss(r), ph: r() * 100, sp: 0.7 + r() * 0.6 }));
+    this.cloud = new PointCloud(this.N * this.T, { minPx: 1 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+    this.c = { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+  }
+  pos(q, time, out) {
+    const u = this.u, mv = this.mv, dir = this.dir;
+    // broad-front travel with darting, zig-zag hunting flight
+    const uu = u - q.s * 0.12 * dir + Math.sin(time * 2.3 * q.sp + q.ph) * 0.003;
+    this.route.frame(uu, _f);
+    out.copy(_f.p).addScaledVector(_f.s, q.g * 0.022 + Math.sin(time * 3.1 * q.sp + q.ph * 7) * 0.005);
+    // at rest: figure-of-eight loops around farms or a winter roost
+    const f = this.route.frame(u, this.c);
+    const a = time * 1.6 * q.sp + q.ph;
+    const rr = 0.004 + Math.abs(q.h) * 0.002;
+    _w.copy(f.p).addScaledVector(f.s, q.g * 0.018 + Math.sin(a) * rr).addScaledVector(f.t, q.h * 0.018 + Math.sin(a * 2) * rr * 0.5);
+    out.lerp(_w, 1 - mv);
+    return out.normalize().multiplyScalar(1.003 + Math.sin(a * 1.3) * 0.0008);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const time = st.time, T = this.T;
+    const tail = [1, 0.45, 0.2];
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      for (let k = 0; k < T; k++) {
+        this.pos(q, time - k * 0.045, _v);
+        this.cloud.set(i * T + k, _v, 0.0017 - k * 0.0003, 1.0 * tail[k], 0.66, 0.74, 1.0);
+      }
+    }
+    this.cloud.commit();
+  }
+}
+
+/* ───────────────────────────── Bluefin tuna ───────────────────────────── */
+export class Tuna extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.2, base: 0.08, trail: 0.12, dash: 300, dashSpeed: 2.2 }, () => 1.0012);
+    this.schools = 12; this.per = 72;
+    const r = rng(97);
+    this.fish = Array.from({ length: this.schools * this.per }, (_, i) => ({ k: Math.floor(i / this.per), a: r() * 6.283, r: Math.sqrt(r()), x: r() - 0.5, y: gauss(r), ph: r() * 10 }));
+    this.cloud = new PointCloud(this.fish.length, { minPx: 1 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, time = st.time, mv = this.mv, dir = this.dir;
+    const cf = { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+    for (let i = 0; i < this.fish.length; i++) {
+      const q = this.fish[i], k = q.k;
+      // schools strung along the route when travelling, spread over the spawning ground at rest
+      const uk = u - k * 0.008 * dir * mv + (k / this.schools - 0.5) * 0.07 * (1 - mv);
+      this.route.frame(uk, cf);
+      const breathe = 1 + 0.25 * Math.sin(time * 0.7 + k);
+      // milling ring at rest…
+      const a = q.a + time * (0.8 + (k % 3) * 0.15) * (k % 2 ? 1 : -1);
+      const rr = (0.002 + 0.0042 * q.r) * breathe;
+      const mx = Math.cos(a) * rr, my = Math.sin(a) * rr;
+      // …polarised, stretched along the swim direction when moving
+      const px = q.x * 0.011, py = q.y * 0.0018 + Math.sin(time * 2 + q.x * 30 + k) * 0.0003;
+      const ox = lerp(mx, px, mv), oy = lerp(my, py, mv);
+      _v.copy(cf.p).addScaledVector(cf.t, ox).addScaledVector(cf.s, oy).normalize().multiplyScalar(1.0012);
+      // silver flashes sweep across the school as the fish turn
+      const flash = Math.pow(Math.max(0, Math.sin(time * 2.6 - (ox + oy) * 900 + k * 1.7)), 14);
+      this.cloud.set(i, _v, 0.0014 + flash * 0.0008, 0.6 + flash * 0.9, lerp(1.0, 1.0, flash), lerp(0.36, 0.95, flash), lerp(0.48, 1.0, flash));
+    }
+    this.cloud.commit();
+  }
+}
+
+/* ───────────────────────────── Honey buzzards ───────────────────────────── */
+export class Buzzards extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.1, base: 0.07, trail: 0.14, dash: 160, dashSpeed: 0.8 }, () => 1.003);
+    this.N = 760;
+    const r = rng(113);
+    this.p = Array.from({ length: this.N }, () => ({ s: r(), g: gauss(r), h: gauss(r), ph: r() * 6.283, cw: r() > 0.5 ? 1 : -1 }));
+    this.cloud = new PointCloud(this.N, { minPx: 1 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+    this.D = 0.016; // spacing between thermals along the flyway
+    this.ka = new THREE.Vector3(); this.kb = new THREE.Vector3();
+    this.n0 = new THREE.Vector3(); this.tA = new THREE.Vector3(); this.tB = new THREE.Vector3();
+  }
+  kettle(k, out) {
+    // thermal centres sit slightly off the route line, deterministic per index
+    this.route.frame(k * this.D, _f);
+    const j = Math.sin(k * 127.1) * 43758.5453;
+    return out.copy(_f.p).addScaledVector(_f.s, (j - Math.floor(j) - 0.5) * 0.008);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, time = st.time, mv = this.mv, dir = this.dir;
+    const head = this.route.frame(u, { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() });
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      const ui = u - q.s * 0.06 * dir;
+      const x = ui / this.D, k = Math.floor(x), f = x - k;
+      let alt;
+      if (f < 0.55) {
+        // climb in a tightening spiral
+        const c = f / 0.55;
+        this.kettle(k, this.ka);
+        const n = this.n0.copy(this.ka).normalize();
+        const tA = this.tA.set(0, 1, 0).cross(n).normalize(), tB = this.tB.crossVectors(n, tA);
+        const a = q.ph + time * 1.5 * q.cw;
+        const rr = 0.0058 * (1 - c * 0.6) + Math.abs(q.g) * 0.001;
+        _v.copy(this.ka).addScaledVector(tA, Math.cos(a) * rr).addScaledVector(tB, Math.sin(a) * rr);
+        alt = 1.003 + c * 0.006;
+      } else {
+        // glide out of the top of the thermal to the next one
+        const g = (f - 0.55) / 0.45;
+        this.kettle(k, this.ka); this.kettle(k + 1, this.kb);
+        _v.copy(this.ka).lerp(this.kb, g).addScaledVector(head.s, q.g * 0.0015);
+        alt = 1.009 - g * 0.006;
+      }
+      // at rest: scattered birds circling their own local thermals
+      const a2 = q.ph + time * 1.1 * q.cw;
+      _w.copy(head.p).addScaledVector(head.s, q.g * 0.02 + Math.cos(a2) * 0.003).addScaledVector(head.t, q.h * 0.02 + Math.sin(a2) * 0.003);
+      _v.normalize().multiplyScalar(alt).lerp(_w.normalize().multiplyScalar(1.004 + Math.sin(a2 * 0.5) * 0.001), 1 - mv);
+      this.cloud.set(i, _v, 0.0017, 0.85, 0.95, 0.83, 0.42);
+    }
+    this.cloud.commit();
+  }
+}
+
+export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards };

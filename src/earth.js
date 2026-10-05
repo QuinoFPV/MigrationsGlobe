@@ -112,8 +112,8 @@ void main() {
   snow = max(snow, smoothstep(-58.0, -63.0, latD));
   float greenland = step(59.0, latD) * step(-58.0, lonD) * step(lonD, -18.0) * smoothstep(0.35, 0.55, cont);
   snow = max(snow, greenland);
-  snow = max(snow, smoothstep(0.66, 0.82, h - (green - 0.5) * 0.12 + smoothstep(35.0, 60.0, aL) * 0.06 - tropic * 0.14) * mtn * smoothstep(14.0, 28.0, aL));
-  col = mix(col, vec3(0.5, 0.54, 0.6) * (0.85 + 0.25 * micro), snow);
+  snow = max(snow, smoothstep(0.74, 0.88, h - (green - 0.5) * 0.24 + smoothstep(35.0, 60.0, aL) * 0.06 - tropic * 0.14 - (1.0 - smoothstep(38.0, 46.0, aL)) * 0.06) * mtn * smoothstep(14.0, 28.0, aL));
+  col = mix(col, vec3(0.4, 0.43, 0.48) * (0.85 + 0.25 * micro), snow);
 
   // ---- ocean ----
   vec3 deep = vec3(0.004, 0.02, 0.05);

@@ -17,9 +17,12 @@ gen tern "An arctic tern in flight against a pale polar sky over drifting sea ic
 gen wildebeest "A vast column of wildebeest crossing the Mara River in golden dusty late-afternoon light, splashing water, dust haze, warm amber palette, telephoto compression"
 gen monarch "Thousands of monarch butterflies clustered on oyamel fir branches in the misty mountain forests of Michoacan, Mexico, shafts of morning light, rich orange and deep green"
 gen caribou "A herd of caribou crossing snowy arctic tundra at blue hour, breath vapor visible, mountains of the Brooks Range behind, soft pink and ice-blue light"
+gen swallow "A barn swallow in fast flight skimming low over a golden Italian wheat field at dawn, forked tail, steel-blue back catching the light, motion and speed"
+gen tuna "A school of Atlantic bluefin tuna swimming in deep blue Mediterranean water, shafts of sunlight from the surface, silver flanks flashing, underwater photography"
+gen buzzard "A European honey buzzard soaring on a thermal above the Strait of Messina, Sicily and Calabria coastlines below in hazy morning light, wings spread wide, seen from slightly below"
 wait
 
-for id in whale tern wildebeest monarch caribou; do
+for id in whale tern wildebeest monarch caribou swallow tuna buzzard; do
   sips -s format jpeg -s formatOptions 82 -Z 1200 "assets-src/$id.png" --out "public/img/$id.jpg" >/dev/null
 done
 echo "Plates written to public/img/"

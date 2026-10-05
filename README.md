@@ -1,6 +1,6 @@
 # The Great Migrations
 
-An interactive 3D atlas that follows five animal migrations through one year: humpback whales, arctic terns, wildebeest, monarch butterflies and caribou. The globe, the routes, the animals and all the animation are generated in code with three.js and GLSL. The only bitmaps are the five documentary "plates" generated through Codex.
+An interactive 3D atlas that follows eight animal migrations through one year: humpback whales, arctic terns, wildebeest, monarch butterflies, caribou, barn swallows, Atlantic bluefin tuna and honey buzzards. The globe, the routes, the animals and all the animation are generated in code with three.js and GLSL. The only bitmaps are the eight documentary "plates" generated through Codex.
 
 ```bash
 npm install
@@ -15,7 +15,7 @@ npm run build      # static build in dist/
 | Drag the globe | Spin it with inertia. It also leans toward the pointer when left alone. |
 | Press and hold on the globe | **Time-lapse**: the year accelerates up to ×19 with a radial streak. |
 | Drag the orbit ring (or scroll over it) | Scrub the months. The ring is the timeline. |
-| Click a species (index, label or beacon) / keys `1`–`5` | Directed camera move to that migration. |
+| Click a species (index, label or beacon) / keys `1`–`8` | Directed camera move to that migration. |
 | `Esc` · `Tab` / `Shift+Tab` · `←` `→` · `Space` | Back · next/prev species · step a month · play/pause |
 | Scroll | Zoom |
 
@@ -33,6 +33,9 @@ The year starts on today's date.
   - **Wildebeest:** 7,500 dark bodies in braided columns, with dust and river-crossing splashes at the Grumeti and the Mara.
   - **Monarchs:** a fluttering swarm funnelling from a broad front down to a few fir-forest roosts. It recolours by generation on the spring relay.
   - **Caribou:** sixteen braided trails worn into the tundra behind a dark herd that spreads out on the calving grounds.
+  - **Barn swallows:** a broad, fast front of streaking birds that zig-zag as they hunt, from Po Valley farms across the Sahara to winter roosts in Nigeria. At rest they fly figure-of-eight loops.
+  - **Bluefin tuna:** compact schools that stretch out while swimming and mill in rings on the spawning grounds, with silver flashes sweeping across them. They pass through the Strait of Gibraltar both ways.
+  - **Honey buzzards:** thermal-hopping flight. Each bird climbs a tightening spiral, glides out of the top to the next thermal, and funnels over Cap Bon, Marettimo and the Strait of Messina in spring.
 - **Post** (`src/post.js`): bloom, a golden-angle bokeh focus pull that tracks the subject (it racks during camera moves), the time-lapse streak, chromatic fringe, vignette and luma-weighted grain.
 - **Typography is in the scene.** There are no panels. Labels hang on leader lines from projected positions, and the route name is set along the projected route itself. Callouts anchor to the herd and to the route ends and avoid each other. Titles assemble letter by letter.
 
@@ -40,7 +43,7 @@ Dev tools: `window.__migrations` exposes live state. `__migrations.app.select('t
 
 ## Data
 
-All figures are **plausible composites grounded in published behaviour**, not live data. Routes follow documented corridors (Southeast Pacific humpback Stock G, Greenland arctic terns, the Serengeti–Mara circuit, the eastern monarch flyway, and the Porcupine caribou herd). See `src/data.js`.
+All figures are **plausible composites grounded in published behaviour**, not live data. Routes follow documented corridors (Southeast Pacific humpback Stock G, Greenland arctic terns, the Serengeti–Mara circuit, the eastern monarch flyway, the Porcupine caribou herd, Italian barn swallows wintering in West Africa, the eastern Atlantic bluefin stock, and the Messina honey-buzzard flyway). See `src/data.js`.
 
 ## Images
 
