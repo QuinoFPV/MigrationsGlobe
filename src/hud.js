@@ -541,7 +541,7 @@ export class Hud {
     const k = SPECIES.findIndex((s) => s.id === id);
     const sp = SPECIES[k], mig = f.migs[k];
     const loc = mig.sample ? mig.sample() : mig.head.clone();
-    const spread = { whale: 1.6, tern: 3, wildebeest: 0.25, monarch: 0.6, caribou: 0.4, swallow: 1.4, tuna: 0.8, buzzard: 0.9, martin: 1.2, egret: 0.5 }[id] ?? 1;
+    const spread = { whale: 1.6, tern: 3, wildebeest: 0.25, monarch: 0.6, caribou: 0.4, swallow: 1.4, tuna: 0.8, buzzard: 0.9, martin: 1.2, egret: 0.5, starling: 0.3, eel: 2 }[id] ?? 1;
     const ll = vecToLatLon(loc);
     ll.lat += (Math.random() - 0.5) * spread; ll.lon += (Math.random() - 0.5) * spread;
     const [a, b] = sp.countRange;

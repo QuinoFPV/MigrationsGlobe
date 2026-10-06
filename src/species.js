@@ -686,4 +686,127 @@ export class Egrets extends Migration {
   }
 }
 
-export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins, egret: Egrets };
+/* ───────────────────────────── Starlings of Rome ───────────────────────────── */
+const ROME = latLonToVec(41.9, 12.5);
+
+export class Starlings extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.1, base: 0.06, trail: 0.2, dash: 160, dashSpeed: 1.2 }, () => 1.003);
+    this.N = 4200; this.flocks = 30;
+    const r = rng(163);
+    this.p = Array.from({ length: this.N }, (_, i) => ({ k: i % this.flocks, a: r() * 2 - 1, b: r() * 2 - 1, g: gauss(r), h: gauss(r), ph: r() * 100, c: r() }));
+    this.fg = Array.from({ length: this.flocks }, () => gauss(r));
+    this.cloud = new PointCloud(this.N, { minPx: 1 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+    this.tA = new THREE.Vector3(); this.tB = new THREE.Vector3(); this.c = new THREE.Vector3(); this.hf = { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+    const n = ROME.clone().normalize();
+    this.rA = new THREE.Vector3(0, 1, 0).cross(n).normalize(); this.rB = new THREE.Vector3().crossVectors(n, this.rA);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, t = st.time, mv = this.mv, dir = this.dir;
+    const fu = fract(u);
+    const atRome = smooth(clamp(1 - Math.abs(fu - 0.48) / 0.05));
+    const head = this.route.frame(u, this.hf);
+    // the murmuration: a deforming sheet that folds, flattens and turns
+    const Rx = 0.017, Ry = 0.0075;
+    const rot = t * 0.15 + 0.7 * Math.sin(t * 0.21);
+    const cr = Math.cos(rot), sr = Math.sin(rot);
+    const squash = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.37));
+    const wx = Math.sin(t * 0.11) * 0.006, wy = Math.cos(t * 0.09) * 0.004;
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      // migration: dense flocks strung along the flyway
+      this.route.frame(u - q.k * 0.012 * dir, _f);
+      _v.copy(_f.p).addScaledVector(_f.s, this.fg[q.k] * 0.008 + q.g * 0.0016).addScaledVector(_f.t, q.h * 0.0016 + Math.sin(t * 1.3 + q.ph) * 0.0005)
+        .normalize().multiplyScalar(1.003);
+      // breeding: pairs scattered across the Baltic countryside
+      _w.copy(head.p).addScaledVector(head.s, q.g * 0.03).addScaledVector(head.t, q.h * 0.03).normalize().multiplyScalar(1.001);
+      // winter: one body over Rome
+      const x0 = q.a * Rx * (1 + 0.35 * Math.sin(t * 0.53 + q.b * 2.1)) + 0.4 * Rx * Math.sin(t * 0.31 + q.b * 1.7);
+      const y0 = q.b * Ry * squash * (1 + 0.35 * Math.cos(t * 0.47 + q.a * 1.9)) + 0.3 * Ry * Math.sin(t * 0.27 + q.a * 2.3);
+      // bend the sheet into an S that travels along it, and pinch it into a waist
+      const bend = 0.9 * Ry * Math.sin((x0 / Rx) * 2.2 + t * 0.6) * (1.1 + Math.sin(t * 0.23));
+      const pinch = 0.55 + 0.45 * Math.abs(Math.sin((x0 / Rx) * 1.6 - t * 0.4));
+      const y1 = y0 * pinch + bend;
+      const x = x0 * cr - y1 * sr + wx, y = x0 * sr + y1 * cr + wy;
+      this.c.copy(ROME).addScaledVector(this.rA, x).addScaledVector(this.rB, y).normalize()
+        .multiplyScalar(1.003 + 0.002 * Math.sin(q.a * 3 + t * 0.8));
+      _w.lerp(this.c, atRome);
+      _v.lerp(_w, 1 - mv);
+      // a travelling density wave lights up the body; the odd iridescent glint
+      const wave = 0.5 + 0.5 * Math.sin(q.a * 6 - t * 3 + q.b * 2);
+      const glint = q.c > 0.93 ? 1 : 0;
+      const murm = atRome * (1 - mv);
+      const alpha = lerp(0.5, 0.08 + 0.55 * wave * wave * wave, murm);
+      if (glint) this.cloud.set(i, _v, 0.0011, alpha + 0.3, 0.85, 0.75, 1.0);
+      else this.cloud.set(i, _v, lerp(0.001, 0.0012, murm), alpha, 0.5 + q.c * 0.15, 0.36 + q.c * 0.1, 0.85);
+    }
+    this.cloud.commit();
+  }
+}
+
+/* ───────────────────────────── European eels ───────────────────────────── */
+export class Eels extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.1, base: 0.06, trail: 0.12, dash: 600, dashSpeed: 1.6 }, () => 1.0012);
+    const r = rng(181);
+    this.NL = 1400;
+    this.l = Array.from({ length: this.NL }, () => ({ s: r(), g: gauss(r), ph: r() * 100 }));
+    this.larvae = new PointCloud(this.NL, { minPx: 1 });
+    this.E = 60; this.seg = 10;
+    this.e = Array.from({ length: this.E }, () => ({ s: r(), g: gauss(r), ph: r() * 6.283, sp: 0.8 + r() * 0.4 }));
+    this.silver = new PointCloud(this.E * this.seg, { minPx: 1 });
+    this.group.add(this.larvae.points, this.silver.points);
+    this.clouds.push(this.larvae, this.silver);
+    this.hf = { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, t = st.time, mv = this.mv;
+    const fu = fract(u);
+    // which life stage the year is in
+    const silverW = smooth(clamp((fu - 0.58) / 0.02)) * smooth(clamp((0.998 - fu) / 0.02));
+    const atSargasso = smooth(clamp(1 - Math.min(fu, 1 - fu) / 0.02));
+    const inRiver = smooth(clamp(1 - Math.abs(fu - 0.577) / 0.012));
+    const glass = smooth(clamp((fu - 0.4) / 0.06)) * (1 - silverW);
+    const larvaW = (1 - silverW) * (1 - inRiver * 0.85);
+    const head = this.route.frame(u, this.hf);
+    // larvae → glass eels: a long, pale drifting band that sharpens into sparkles
+    for (let i = 0; i < this.NL; i++) {
+      const q = this.l[i];
+      const span = lerp(0.12, 0.04, glass);
+      this.route.frame(u - q.s * span, _f);
+      const drift = Math.sin(t * 0.4 + q.ph) * 0.002;
+      _v.copy(_f.p).addScaledVector(_f.s, q.g * lerp(0.02, 0.006, glass) + drift).normalize().multiplyScalar(1.0012);
+      _w.copy(head.p).addScaledVector(head.s, q.g * 0.004).addScaledVector(head.t, (q.s - 0.5) * 0.006).normalize().multiplyScalar(1.0012);
+      _v.lerp(_w, inRiver);
+      const tw = Math.pow(Math.max(0, Math.sin(t * 3 + q.ph)), 6);
+      const a = larvaW * lerp(0.5, 0.35 + tw * 0.9, glass);
+      this.larvae.set(i, _v, lerp(0.0019, 0.0014, glass), a, lerp(0.55, 0.85, glass), lerp(0.95, 1, glass), lerp(0.85, 1, glass));
+    }
+    this.larvae.commit();
+    // silver eels: undulating bodies swimming home, a slow spawning swirl at the end
+    for (let k = 0; k < this.E; k++) {
+      const q = this.e[k];
+      for (let j = 0; j < this.seg; j++) {
+        const along = q.s * 0.06 + j * 0.0024;
+        this.route.frame(u - along, _f);
+        const und = Math.sin(j * 0.9 - t * 4 * q.sp + q.ph) * 0.0024 * (j / this.seg + 0.3);
+        _v.copy(_f.p).addScaledVector(_f.s, q.g * 0.014 + und).normalize().multiplyScalar(1.0012);
+        const a2 = q.ph + t * 0.4 - j * 0.12;
+        const rr = 0.004 + Math.abs(q.g) * 0.003;
+        _w.copy(head.p).addScaledVector(head.s, Math.cos(a2) * rr).addScaledVector(head.t, Math.sin(a2) * rr).normalize().multiplyScalar(1.0012);
+        _v.lerp(_w, atSargasso * (1 - mv));
+        const fade = 1 - j / this.seg;
+        this.silver.set(k * this.seg + j, _v, 0.002 * (0.6 + 0.4 * fade), Math.max(silverW, atSargasso) * (0.4 + 0.6 * fade), 0.82, 0.95, 1.0);
+      }
+    }
+    this.silver.commit();
+  }
+}
+
+export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins, egret: Egrets, starling: Starlings, eel: Eels };

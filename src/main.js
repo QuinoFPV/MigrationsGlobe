@@ -395,7 +395,7 @@ function frame(forced) {
   U.uTime.value = time;
   U.uMonth.value = t;
   U.uReveal.value = S.started ? 0.04 + 0.96 * S.reveal : 0.04;
-  const cloudTarget = S.focusId ? ({ whale: 0.35, tern: 0.45, wildebeest: 0.1, monarch: 0.3, caribou: 0.12, swallow: 0.3, tuna: 0.3, buzzard: 0.32, martin: 0.3, egret: 0.28 }[S.focusId] ?? 0.3) : 0.85;
+  const cloudTarget = S.focusId ? ({ whale: 0.35, tern: 0.45, wildebeest: 0.1, monarch: 0.3, caribou: 0.12, swallow: 0.3, tuna: 0.3, buzzard: 0.32, martin: 0.3, egret: 0.28, starling: 0.25, eel: 0.4 }[S.focusId] ?? 0.3) : 0.85;
   S.cloudAmt = lerp(S.cloudAmt, cloudTarget, 1 - Math.exp(-dt * 1.2));
   E.cloudUniforms.uAmt.value = S.cloudAmt * (0.3 + 0.7 * S.reveal);
   E.atmoUniforms.uIntensity.value = (S.started ? 0.25 + 0.75 * S.reveal : 0.25) * (1 + Math.sin(time * 0.8) * 0.06);

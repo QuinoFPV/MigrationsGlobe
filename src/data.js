@@ -428,6 +428,89 @@ export const SPECIES = [
     labelAngle: 0,
     blurb: 'Hunted almost to extinction in Europe for hat plumes a century ago, the great white egret is back. Central European birds now drift south-west each autumn, through the Po Delta and the Basque coast to Iberia and Morocco.',
   },
+  {
+    id: 'starling',
+    index: '11',
+    name: 'Starlings of Rome',
+    latin: 'Sturnus vulgaris',
+    stock: 'Baltic & Polish breeders · Rome roost',
+    color: [0.74, 0.55, 1.0],
+    css: '#b98cff',
+    portrait: 'img/starling.jpg',
+    verb: 'murmuration',
+    route: [[57, 25], [54, 21.5], [50.5, 19], [47.5, 16.5], [45.5, 13.4], [43.6, 12.6], [41.9, 12.5], [43.2, 13.9], [45.8, 14.4], [48.4, 17.6], [51.6, 22.2], [55, 27]],
+    keys: [[0, 0.48], [2.4, 0.485], [2.7, 0.6], [3.1, 0.81], [3.6, 1.0], [9.0, 1.0], [9.8, 1.298], [10.3, 1.433], [10.7, 1.48], [12, 1.48]],
+    phases: [
+      [0, 2.4, 'Murmurations', 'Dusk ballets over the Tiber'],
+      [2.4, 3.6, 'Northbound', 'Back across the Alps to the Baltic'],
+      [3.6, 9.0, 'Breeding', 'Nest holes from Poland to Latvia'],
+      [9.0, 10.7, 'Southbound', 'Flocks crossing the Alps and the Po'],
+      [10.7, 12, 'Murmurations', 'Millions roosting in the plane trees of Rome'],
+    ],
+    ends: [
+      { u: 0, title: 'Breeding grounds', place: 'Baltic states & Poland', window: 'APR — AUG' },
+      { u: 0.48, title: 'Winter roost', place: 'Rome · Termini & Lungotevere', window: 'NOV — FEB' },
+    ],
+    distanceKm: 2000,
+    distanceNote: 'one way · from the Baltic to Rome',
+    population: 4000000,
+    popNote: 'est. birds roosting in Rome in winter',
+    trend: '−1.2% / yr',
+    status: 'LC',
+    statusNote: 'Least Concern, though declining across northern Europe',
+    threats: ['Loss of grassland insects on farmland', 'Roost disturbance and culling in cities', 'Pesticides in breeding areas', 'Collisions with buildings and traffic'],
+    medium: 'air',
+    observers: ['LIPU Roma', 'Roost count, Lungotevere', 'eBird checklist', 'Weather radar, Fiumicino', 'EURING recovery #', 'Citizen video log'],
+    unit: 'starlings',
+    countRange: [200, 400000],
+    focus: { lat: 46, lon: 16, alt: 0.8, tilt: 14, k: 0.85, fov: 33, sun: 18 },
+    labelAngle: 0,
+    blurb: 'Every winter evening, millions of starlings from the Baltic pour into the sky above Rome and move as one body: ribbons, waves and folding clouds that ripple away from every falcon that dives at them.',
+  },
+  {
+    id: 'eel',
+    index: '12',
+    name: 'European Eel',
+    latin: 'Anguilla anguilla',
+    stock: 'One panmictic Atlantic population',
+    color: [0.25, 0.88, 0.69],
+    css: '#3fe0b0',
+    portrait: 'img/eel.jpg',
+    verb: 'run',
+    route: [
+      [26, -60], [29, -66], [34, -71], [39, -63], [43, -48], [47, -32], [47, -16], [44.5, -9.5], [40, -10.5], [36.6, -9], [35.97, -5.6],
+      [36.8, 0.5], [39.5, 4.8], [42.6, 7.2], [43.3, 9.3], [42.4, 10.6], [41.74, 12.23], [40.6, 11.6], [38.9, 11.9], [37.3, 11.6], [37.4, 6],
+      [36.5, 0], [35.92, -5.7], [35, -15], [31, -35], [27.5, -52],
+    ],
+    keys: [[0, 0.577], [0.3, 0.58], [0.8, 0.667], [1.5, 0.856], [2.2, 1.0], [3.0, 1.005], [5.0, 1.15], [7.5, 1.33], [9.5, 1.423], [10.4, 1.465], [11.0, 1.548], [11.4, 1.577], [12, 1.577]],
+    phases: [
+      [0, 0.3, 'River life', 'Years in the Tiber, folded into weeks'],
+      [0.3, 2.2, 'Silver eels', 'Back across the Atlantic, swimming deep'],
+      [2.2, 3.0, 'Spawning', 'Somewhere in the Sargasso Sea, never filmed'],
+      [3.0, 9.5, 'Larval drift', 'Leaf-shaped larvae ride the Gulf Stream'],
+      [9.5, 11.4, 'Glass eels', 'Transparent elvers slip into the Mediterranean'],
+      [11.4, 12, 'River life', 'Elvers climb the Tiber'],
+    ],
+    ends: [
+      { u: 0, title: 'Spawning grounds', place: 'Sargasso Sea', window: 'MAR — APR' },
+      { u: 0.577, title: 'River home', place: 'Tiber estuary, Rome', window: 'DEC — JAN' },
+    ],
+    distanceKm: 6000,
+    distanceNote: 'one way · a lifetime folded into one year',
+    population: 25000000,
+    popNote: 'est. silver eels leaving Europe each year',
+    trend: '−95% since 1980',
+    status: 'CR',
+    statusNote: 'Critically Endangered: glass-eel arrivals have collapsed',
+    threats: ['Dams and weirs blocking rivers', 'Illegal glass-eel trafficking to Asia', 'Hydropower turbines', 'Parasites and pollution'],
+    medium: 'sea',
+    observers: ['Glass-eel trap, Tiber', 'Satellite tag AA-', 'Tevere river monitoring', 'Comacchio lagoon survey', 'Research vessel, Sargasso', 'eDNA sample #'],
+    unit: 'eels',
+    countRange: [10, 50000],
+    focus: { lat: 38, lon: -24, alt: 2.4, tilt: 4, k: 0.5, fov: 33 },
+    labelAngle: 0,
+    blurb: 'Every European eel is born in the Sargasso Sea, crosses the Atlantic as a see-through larva, spends years in a river like the Tiber, then swims 6,000 km back to spawn and die. No one has ever seen it spawn.',
+  },
 ];
 
 export const STATUS_SCALE = ['LC', 'NT', 'VU', 'EN', 'CR'];
@@ -452,6 +535,16 @@ export function conditionsAt(sp, lat, t) {
     const temp = 31 - Math.max(0, a - 20) * 0.6 + season * 7;
     const desert = a > 14 && a < 31;
     return { label: 'Air temperature', value: `${temp.toFixed(0)}°C`, extra: desert ? `Sahara crossing · headwind ${(12 + (m * 5) % 11).toFixed(0)} km/h` : 'Insect swarms over water' };
+  }
+  if (sp.id === 'starling') {
+    const roost = Math.abs(lat - 41.9) < 1.2;
+    const n = roost ? (2 + ((m * 0.37) % 2.4)).toFixed(1) + 'M birds' : Math.round(800 + ((m * 977) % 9000)).toLocaleString('en-US') + ' birds';
+    return { label: roost ? 'Murmuration' : 'Flock size', value: n, extra: roost ? 'Peregrine overhead · waves rippling' : 'Low over farmland at dusk' };
+  }
+  if (sp.id === 'eel') {
+    const deep = m < 2.4 && m > 0.2;
+    const sst = 26 - 0.0055 * a * a + season * 3;
+    return { label: deep ? 'Swimming depth' : 'Sea surface', value: deep ? `~${Math.round(300 + ((m * 331) % 500))} m` : `${sst.toFixed(1)}°C`, extra: deep ? 'Diving by day, rising at night' : 'Drifting in the Gulf Stream' };
   }
   if (sp.id === 'egret') {
     const depth = Math.round(14 + Math.sin(m * 0.9 + lat) * 9);
