@@ -384,6 +384,50 @@ export const SPECIES = [
     labelAngle: 0,
     blurb: 'The "city swallow" glues its mud nest under Italian cornices. Where it spends the winter is still half a mystery: it feeds so high over Africa that ornithologists almost never see it there.',
   },
+  {
+    id: 'egret',
+    index: '10',
+    name: 'Great White Egret',
+    latin: 'Ardea alba',
+    stock: 'Central European breeders',
+    color: [1.0, 0.95, 0.8],
+    css: '#fff1c9',
+    portrait: 'img/egret.jpg',
+    verb: 'siege',
+    route: [
+      [47.8, 16.8], [46.4, 13.6], [45.0, 11.6], [44.4, 8.6], [43.5, 4.6], [43.6, 1.4], [43.38, -2.68], [40.5, -4.5], [37.0, -6.4],
+      [34.85, -6.3], [36.2, -3.0], [38.5, -0.5], [40.7, 0.75], [42.6, 3.0], [44.9, 12.4], [46.0, 17.5], [46.9, 19.2],
+    ],
+    keys: [[0, 0.47], [2.2, 0.48], [2.6, 0.56], [2.9, 0.66], [3.1, 0.71], [3.25, 0.86], [3.5, 0.96], [3.7, 1.0], [7.3, 1.0], [8.8, 1.02],
+      [9.2, 1.093], [9.7, 1.197], [10.2, 1.305], [10.9, 1.445], [11.3, 1.47], [12, 1.47]],
+    phases: [
+      [0, 2.2, 'Wintering', 'Stalking fish in Doñana and Moroccan marshes'],
+      [2.2, 3.7, 'Northbound', 'Back along the Ebro, the Camargue and the Po'],
+      [3.7, 7.3, 'Breeding', 'Reedbed colonies at Lake Neusiedl'],
+      [7.3, 8.8, 'Dispersal', 'Young birds wander the Danube wetlands'],
+      [8.8, 11.3, 'Southbound', 'Po Delta, Camargue, Urdaibai'],
+      [11.3, 12, 'Wintering', 'Settled on Iberian rice fields'],
+    ],
+    ends: [
+      { u: 0, title: 'Breeding colonies', place: 'Lake Neusiedl, Austria–Hungary', window: 'APR — JUL' },
+      { u: 0.47, title: 'Winter wetlands', place: 'Doñana & Merja Zerga', window: 'DEC — FEB' },
+    ],
+    distanceKm: 2600,
+    distanceNote: 'one way · a partial migrant',
+    population: 120000,
+    popNote: 'est. adults in Europe, and rising',
+    trend: '+6% / yr',
+    status: 'LC',
+    statusNote: 'Least Concern; recovered from the plume trade',
+    threats: ['Drainage of reedbeds and marshes', 'Disturbance at breeding colonies', 'Pesticide build-up in fish prey', 'Cold snaps freezing winter feeding sites'],
+    medium: 'air',
+    observers: ['IWC winter count', 'Urdaibai Bird Center', 'eBird checklist', 'GPS tag AE-', 'Colony census, Neusiedl', 'Ornitho.it'],
+    unit: 'egrets',
+    countRange: [1, 400],
+    focus: { lat: 42, lon: 4, alt: 0.85, tilt: 12, k: 0.85, fov: 33, sun: 28 },
+    labelAngle: 0,
+    blurb: 'Hunted almost to extinction in Europe for hat plumes a century ago, the great white egret is back. Central European birds now drift south-west each autumn, through the Po Delta and the Basque coast to Iberia and Morocco.',
+  },
 ];
 
 export const STATUS_SCALE = ['LC', 'NT', 'VU', 'EN', 'CR'];
@@ -408,6 +452,11 @@ export function conditionsAt(sp, lat, t) {
     const temp = 31 - Math.max(0, a - 20) * 0.6 + season * 7;
     const desert = a > 14 && a < 31;
     return { label: 'Air temperature', value: `${temp.toFixed(0)}°C`, extra: desert ? `Sahara crossing · headwind ${(12 + (m * 5) % 11).toFixed(0)} km/h` : 'Insect swarms over water' };
+  }
+  if (sp.id === 'egret') {
+    const depth = Math.round(14 + Math.sin(m * 0.9 + lat) * 9);
+    const cold = a > 42 && season < -0.3;
+    return { label: 'Wetland water depth', value: `${depth} cm`, extra: cold ? 'Frost risk at the roost' : depth < 25 ? 'Ideal wading depth' : 'Too deep, birds on the margins' };
   }
   if (sp.id === 'martin') {
     const aloft = a < 39;

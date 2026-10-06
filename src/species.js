@@ -633,4 +633,57 @@ export class HouseMartins extends Migration {
   }
 }
 
-export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins };
+/* ───────────────────────────── Great white egrets ───────────────────────────── */
+const EGRET_HOME = [[47.8, 16.75], [46.6, 19.4], [45.6, 18.85]];
+const EGRET_WINTER = [[37.0, -6.4], [34.85, -6.3], [40.7, 0.75], [43.5, 4.6], [43.38, -2.68], [44.95, 12.4]];
+
+export class Egrets extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.1, base: 0.07, trail: 0.2, dash: 140, dashSpeed: 0.5 }, () => 1.004);
+    this.flocks = 14; this.per = 7;
+    this.N = this.flocks * this.per;
+    const r = rng(149);
+    this.f = Array.from({ length: this.flocks }, () => ({ g: gauss(r), off: r() }));
+    this.b = Array.from({ length: this.N }, (_, i) => ({
+      k: Math.floor(i / this.per), j: i % this.per,
+      home: latLonToVec(...EGRET_HOME[i % EGRET_HOME.length]),
+      winter: latLonToVec(...EGRET_WINTER[i % EGRET_WINTER.length]),
+      gx: gauss(r), gy: gauss(r), ph: r() * 100,
+    }));
+    this.cloud = new PointCloud(this.N, { minPx: 1.2 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+    this.tA = new THREE.Vector3(); this.tB = new THREE.Vector3(); this.c = new THREE.Vector3();
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, time = st.time, mv = this.mv, dir = this.dir;
+    const fu = fract(u);
+    const atHome = smooth(clamp(1 - Math.min(fu, 1 - fu) / 0.08));
+    const sp = 0.0026; // spacing inside the V
+    for (let i = 0; i < this.N; i++) {
+      const q = this.b[i], fl = this.f[q.k];
+      // slow V-skeins strung along the flyway
+      this.route.frame(u - (q.k * 0.022 + fl.off * 0.006) * dir, _f);
+      const c = (this.per - 1) / 2, d = q.j - c;
+      _v.copy(_f.p).addScaledVector(_f.t, -Math.abs(d) * sp * dir).addScaledVector(_f.s, d * sp * 1.1 + fl.g * 0.009)
+        .normalize().multiplyScalar(1.004 + Math.sin(time * 0.6 + q.k) * 0.0008);
+      // at rest: egrets standing in shallow water at wetland sites
+      const site = atHome > 0.5 ? q.home : q.winter;
+      const n = site;
+      this.tA.set(0, 1, 0).cross(n).normalize(); this.tB.crossVectors(n, this.tA);
+      const hop = Math.max(0, Math.sin(time * 0.15 + q.ph)) ** 20 * 0.0015; // the odd short hop to a new pool
+      this.c.copy(n).addScaledVector(this.tA, q.gx * 0.004 + hop).addScaledVector(this.tB, q.gy * 0.004)
+        .normalize().multiplyScalar(1.0006 + hop * 0.5);
+      _v.lerp(this.c, 1 - mv);
+      // a slow wave of wingbeats travels down each skein
+      const beat = 0.5 + 0.5 * Math.sin(time * 2.4 - Math.abs(d) * 0.7 + q.k);
+      const a = lerp(0.85, 0.6 + 0.4 * beat, mv);
+      this.cloud.set(i, _v, lerp(0.0013, 0.0021 + beat * 0.0004, mv), a, 1.0, 0.96, 0.84);
+    }
+    this.cloud.commit();
+  }
+}
+
+export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins, egret: Egrets };

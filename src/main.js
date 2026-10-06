@@ -244,7 +244,7 @@ addEventListener('keydown', (e) => {
   else if (e.key === ' ') { e.preventDefault(); app.togglePlay(); }
   else if (e.key === 'ArrowRight') { S.monthTarget = Math.floor(S.t) + 1; }
   else if (e.key === 'ArrowLeft') { S.monthTarget = Math.ceil(S.t) - 1; }
-  else if (/^[1-9]$/.test(e.key) && SPECIES[+e.key - 1]) app.select(SPECIES[+e.key - 1].id);
+  else if (/^[0-9]$/.test(e.key)) { const i = e.key === '0' ? 9 : +e.key - 1; if (SPECIES[i]) app.select(SPECIES[i].id); }
   else if (e.key === 'Tab' && S.focusId) { e.preventDefault(); app.step(e.shiftKey ? -1 : 1); }
 });
 
@@ -395,7 +395,7 @@ function frame(forced) {
   U.uTime.value = time;
   U.uMonth.value = t;
   U.uReveal.value = S.started ? 0.04 + 0.96 * S.reveal : 0.04;
-  const cloudTarget = S.focusId ? ({ whale: 0.35, tern: 0.45, wildebeest: 0.1, monarch: 0.3, caribou: 0.12, swallow: 0.3, tuna: 0.3, buzzard: 0.32, martin: 0.3 }[S.focusId] ?? 0.3) : 0.85;
+  const cloudTarget = S.focusId ? ({ whale: 0.35, tern: 0.45, wildebeest: 0.1, monarch: 0.3, caribou: 0.12, swallow: 0.3, tuna: 0.3, buzzard: 0.32, martin: 0.3, egret: 0.28 }[S.focusId] ?? 0.3) : 0.85;
   S.cloudAmt = lerp(S.cloudAmt, cloudTarget, 1 - Math.exp(-dt * 1.2));
   E.cloudUniforms.uAmt.value = S.cloudAmt * (0.3 + 0.7 * S.reveal);
   E.atmoUniforms.uIntensity.value = (S.started ? 0.25 + 0.75 * S.reveal : 0.25) * (1 + Math.sin(time * 0.8) * 0.06);

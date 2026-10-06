@@ -21,9 +21,10 @@ gen swallow "A barn swallow in fast flight skimming low over a golden Italian wh
 gen tuna "A school of Atlantic bluefin tuna swimming in deep blue Mediterranean water, shafts of sunlight from the surface, silver flanks flashing, underwater photography"
 gen buzzard "A European honey buzzard soaring on a thermal above the Strait of Messina, Sicily and Calabria coastlines below in hazy morning light, wings spread wide, seen from slightly below"
 gen martin "Common house martins at their mud nests under the stone cornice of an old Italian palazzo at golden hour, one bird in flight showing its bright white rump and glossy blue-black back, terracotta and ochre walls"
+gen egret "A great white egret standing in shallow misty estuary water at dawn, long neck in an S-curve, delicate breeding plumes, reflections on still water, reeds silhouetted behind, cold blue and pale gold light"
 wait
 
-for id in whale tern wildebeest monarch caribou swallow tuna buzzard martin; do
+for id in whale tern wildebeest monarch caribou swallow tuna buzzard martin egret; do
   sips -s format jpeg -s formatOptions 82 -Z 1200 "assets-src/$id.png" --out "public/img/$id.jpg" >/dev/null
 done
 echo "Plates written to public/img/"

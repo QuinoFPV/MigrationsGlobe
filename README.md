@@ -1,6 +1,6 @@
 # The Great Migrations
 
-An interactive 3D atlas that follows nine animal migrations through one year: humpback whales, arctic terns, wildebeest, monarch butterflies, caribou, barn swallows, Atlantic bluefin tuna, honey buzzards and house martins. The globe, the routes, the animals and all the animation are generated in code with three.js and GLSL. The only bitmaps are the nine documentary "plates" generated through Codex.
+An interactive 3D atlas that follows ten animal migrations through one year: humpback whales, arctic terns, wildebeest, monarch butterflies, caribou, barn swallows, Atlantic bluefin tuna, honey buzzards, house martins and great white egrets. The globe, the routes, the animals and all the animation are generated in code with three.js and GLSL. The only bitmaps are the ten documentary "plates" generated through Codex.
 
 ```bash
 npm install
@@ -15,7 +15,7 @@ npm run build      # static build in dist/
 | Drag the globe | Spin it with inertia. It also leans toward the pointer when left alone. |
 | Press and hold on the globe | **Time-lapse**: the year accelerates up to ×19 with a radial streak. |
 | Drag the orbit ring (or scroll over it) | Scrub the months. The ring is the timeline. |
-| Click a species (index, label or beacon) / keys `1`–`9` | Directed camera move to that migration. |
+| Click a species (index, label or beacon) / keys `1`–`9`, `0` | Directed camera move to that migration. |
 | `Esc` · `Tab` / `Shift+Tab` · `←` `→` · `Space` | Back · next/prev species · step a month · play/pause |
 | Scroll | Zoom |
 
@@ -37,6 +37,7 @@ The year starts on today's date.
   - **Bluefin tuna:** compact schools that stretch out while swimming and mill in rings on the spawning grounds, with silver flashes sweeping across them. They pass through the Strait of Gibraltar both ways.
   - **Honey buzzards:** thermal-hopping flight. Each bird climbs a tightening spiral, glides out of the top to the next thermal, and funnels over Cap Bon, Marettimo and the Strait of Messina in spring.
   - **House martins:** colonies that light up on the cornices of nine Italian towns, with short sorties from the nest. They migrate higher than swallows, west over Sardinia and Algeria and back via Tunisia and Sicily, with white-rump flashes, then thin into a high, faint cloud over African forests where they are rarely seen.
+  - **Great white egrets:** slow, widely spaced V-skeins with a wave of wingbeats running down each line, from Lake Neusiedl via the Po Delta, Camargue and Urdaibai to Doñana and Morocco. At rest they stand still in shallow water at wetland sites, with the odd short hop.
 - **Post** (`src/post.js`): bloom, a golden-angle bokeh focus pull that tracks the subject (it racks during camera moves), the time-lapse streak, chromatic fringe, vignette and luma-weighted grain.
 - **Typography is in the scene.** There are no panels. Labels hang on leader lines from projected positions, and the route name is set along the projected route itself. Callouts anchor to the herd and to the route ends and avoid each other. Titles assemble letter by letter.
 
@@ -44,7 +45,7 @@ Dev tools: `window.__migrations` exposes live state. `__migrations.app.select('t
 
 ## Data
 
-All figures are **plausible composites grounded in published behaviour**, not live data. Routes follow documented corridors (Southeast Pacific humpback Stock G, Greenland arctic terns, the Serengeti–Mara circuit, the eastern monarch flyway, the Porcupine caribou herd, Italian barn swallows wintering in West Africa, the eastern Atlantic bluefin stock, the Messina honey-buzzard flyway, and Italian house-martin colonies). See `src/data.js`.
+All figures are **plausible composites grounded in published behaviour**, not live data. Routes follow documented corridors (Southeast Pacific humpback Stock G, Greenland arctic terns, the Serengeti–Mara circuit, the eastern monarch flyway, the Porcupine caribou herd, Italian barn swallows wintering in West Africa, the eastern Atlantic bluefin stock, the Messina honey-buzzard flyway, Italian house-martin colonies, and the central-European great-egret flyway). See `src/data.js`.
 
 ## Images
 
