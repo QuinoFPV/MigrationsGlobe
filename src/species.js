@@ -581,4 +581,56 @@ export class Buzzards extends Migration {
   }
 }
 
-export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards };
+/* ───────────────────────────── House martins ───────────────────────────── */
+const COLONIES = [[43.77, 11.25], [44.49, 11.34], [41.9, 12.5], [43.11, 12.39], [40.85, 14.27], [45.07, 7.69], [45.46, 9.19], [45.44, 12.33], [38.12, 13.36]];
+
+export class HouseMartins extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.1, base: 0.06, trail: 0.15, dash: 420, dashSpeed: 2.6 }, () => 1.006);
+    this.N = 1000;
+    const r = rng(131);
+    this.p = Array.from({ length: this.N }, (_, i) => {
+      const c = COLONIES[i % COLONIES.length];
+      return { s: r(), g: gauss(r), h: gauss(r), ph: r() * 100, sp: 0.7 + r() * 0.6, home: latLonToVec(c[0], c[1]), a0: r() * 6.283 };
+    });
+    this.cloud = new PointCloud(this.N, { minPx: 1 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+    this.hf = { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+    this.tA = new THREE.Vector3(); this.tB = new THREE.Vector3(); this.c = new THREE.Vector3();
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, time = st.time, mv = this.mv, dir = this.dir;
+    const fu = fract(u);
+    const atColonies = smooth(clamp(1 - Math.min(fu, 1 - fu) / 0.06));
+    const head = this.route.frame(u, this.hf);
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      // migration: loose, high flock
+      this.route.frame(u - q.s * 0.09 * dir, _f);
+      _v.copy(_f.p).addScaledVector(_f.s, q.g * 0.016 + Math.sin(time * 1.7 * q.sp + q.ph) * 0.003)
+        .normalize().multiplyScalar(1.0065 + Math.sin(time * 0.9 + q.ph) * 0.0012);
+      // breeding: short sorties out from the nest and back again
+      const n = q.home;
+      this.tA.set(0, 1, 0).cross(n).normalize(); this.tB.crossVectors(n, this.tA);
+      const sortie = Math.abs(Math.sin(time * 0.9 * q.sp + q.ph)) * (0.0025 + Math.abs(q.g) * 0.002);
+      const ang = q.a0 + time * 0.15;
+      this.c.copy(n).addScaledVector(this.tA, Math.cos(ang) * sortie).addScaledVector(this.tB, Math.sin(ang) * sortie)
+        .normalize().multiplyScalar(1.0015 + sortie * 0.4);
+      // winter: a high, thin cloud over the forest canopy
+      _w.copy(head.p).addScaledVector(head.s, q.g * 0.03 + Math.sin(time * 0.2 + q.ph) * 0.004).addScaledVector(head.t, q.h * 0.03 + Math.cos(time * 0.17 + q.ph) * 0.004)
+        .normalize().multiplyScalar(1.009 + Math.sin(q.ph) * 0.0015);
+      _w.lerp(this.c, atColonies);
+      _v.lerp(_w, 1 - mv);
+      // the white rump flashes as birds bank
+      const flash = Math.pow(Math.max(0, Math.sin(time * 6 * q.sp + q.ph)), 10);
+      const winterDim = lerp(1, 0.55, (1 - atColonies) * (1 - mv));
+      this.cloud.set(i, _v, 0.0014, (0.6 + flash * 0.6) * winterDim, lerp(0.66, 1, flash), lerp(0.94, 1, flash), lerp(0.62, 1, flash));
+    }
+    this.cloud.commit();
+  }
+}
+
+export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins };

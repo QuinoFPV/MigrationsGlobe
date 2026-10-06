@@ -342,6 +342,48 @@ export const SPECIES = [
     labelAngle: 0,
     blurb: 'A raptor that eats wasp grubs. It cannot cross open sea on flapping power, so each spring tens of thousands funnel over the Strait of Messina, climbing every thermal they find.',
   },
+  {
+    id: 'martin',
+    index: '09',
+    name: 'House Martin',
+    latin: 'Delichon urbicum',
+    stock: 'Italian city colonies',
+    color: [0.66, 0.94, 0.62],
+    css: '#a8f0a0',
+    portrait: 'img/martin.jpg',
+    verb: 'colony',
+    route: [
+      [43.8, 11.2], [43.0, 8.6], [40.5, 6.4], [36.9, 4.2], [31, 2], [23, 0], [15, -1.5], [9, -0.5], [6.5, 3.5], [5, 9], [6, 13],
+      [10, 11.5], [18, 10.5], [26, 10.2], [32.5, 10.6], [36.9, 11.1], [38.1, 13.5], [41, 14.6], [43.2, 12.6],
+    ],
+    keys: [[0, 0.52], [2.6, 0.54], [3.1, 0.7], [3.6, 0.9], [4.0, 1.0], [8.9, 1.0], [9.3, 1.055], [9.7, 1.164], [10.2, 1.34], [10.6, 1.46], [11.0, 1.52], [12, 1.52]],
+    phases: [
+      [0, 2.6, 'Wintering', 'High over African forests, almost never seen'],
+      [2.6, 4.0, 'Northbound', 'Over the Sahara to Tunisia and Sicily'],
+      [4.0, 8.9, 'Breeding', 'Mud cups under city cornices'],
+      [8.9, 11.0, 'Southbound', 'West over Sardinia and Algeria'],
+      [11.0, 12, 'Wintering', 'Vanishing into the African sky'],
+    ],
+    ends: [
+      { u: 0, title: 'Breeding colonies', place: 'Cornices of Italian towns', window: 'APR — SEP' },
+      { u: 0.52, title: 'Winter skies', place: 'Gulf of Guinea forests', window: 'NOV — FEB' },
+    ],
+    distanceKm: 5000,
+    distanceNote: 'one way · flying higher than swallows',
+    population: 1500000,
+    popNote: 'est. adults breeding in Italy',
+    trend: '−1.5% / yr',
+    status: 'LC',
+    statusNote: 'Least Concern; declining where nests are knocked down',
+    threats: ['Nests removed during building renovation', 'Fewer mud puddles for nest building', 'Collapse of flying-insect prey', 'Drought along the Sahel'],
+    medium: 'air',
+    observers: ['Censimento nidi, Firenze', 'Ringing station Capri', 'eBird checklist', 'Weather-radar echo, Sahel', 'Geolocator DU-', 'Citizen nest count #'],
+    unit: 'martins',
+    countRange: [4, 3000],
+    focus: { lat: 27, lon: 7, alt: 1.7, tilt: 6, k: 0.6, fov: 33 },
+    labelAngle: 0,
+    blurb: 'The "city swallow" glues its mud nest under Italian cornices. Where it spends the winter is still half a mystery: it feeds so high over Africa that ornithologists almost never see it there.',
+  },
 ];
 
 export const STATUS_SCALE = ['LC', 'NT', 'VU', 'EN', 'CR'];
@@ -366,6 +408,11 @@ export function conditionsAt(sp, lat, t) {
     const temp = 31 - Math.max(0, a - 20) * 0.6 + season * 7;
     const desert = a > 14 && a < 31;
     return { label: 'Air temperature', value: `${temp.toFixed(0)}°C`, extra: desert ? `Sahara crossing · headwind ${(12 + (m * 5) % 11).toFixed(0)} km/h` : 'Insect swarms over water' };
+  }
+  if (sp.id === 'martin') {
+    const aloft = a < 39;
+    const high = Math.round((aloft ? 1800 + (m * 97) % 600 : 300 + (m * 53) % 400) / 10) * 10;
+    return { label: 'Flight altitude', value: `~${high.toLocaleString('en-US')} m`, extra: aloft ? 'Riding high-altitude insect drift' : 'Hawking over rooftops' };
   }
   if (sp.id === 'buzzard') {
     const lift = 1.1 + Math.max(0, season) * 1.8 + (a < 36 ? 0.9 : 0);
