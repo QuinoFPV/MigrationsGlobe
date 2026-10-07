@@ -36,8 +36,9 @@ class Migration {
     this.phase = phaseAt(sp, st.t);
     this.focus = st.focus; this.dim = st.dim; this.reveal = st.reveal; this.hi = st.hi;
     // tiny-scale species fade at distance: sub-pixel bundles shimmer and pump the bloom
-    const near = smooth(clamp((2.4 - (st.camDist ?? 0)) / 1.6));
-    const far = this.farFade ?? 1;
+    // the focused species is always shown at full strength
+    const near = Math.max(smooth(clamp((2.4 - (st.camDist ?? 0)) / 1.6)), st.focus ?? 0);
+    const far = this.farFade ?? 0.5;
     const vis = (1 - this.dim * 0.82) * this.reveal * lerp(far, 1, near);
     this.visibility = vis;
     for (const r of this.ribbons) {
@@ -104,6 +105,7 @@ export class Whales extends Migration {
   constructor(sp) {
     super(sp);
     this.addRouteLine({ width: 1.4, base: 0.1, trail: 0.22, dash: 220, dashSpeed: 1.5 }, () => 1.0012);
+    this.farFade = 1;
     this.n = 7;
     const r = rng(11);
     this.pod = Array.from({ length: this.n }, (_, i) => ({
@@ -236,6 +238,7 @@ export class Terns extends Migration {
     super(sp);
     this.alt = (u) => 1.006 + 0.006 * Math.sin(u * Math.PI * 2 * 3) ** 2;
     this.routeR = this.alt;
+    this.farFade = 1;
     this.addRouteLine({ width: 1.1, base: 0.07, trail: 0.12, dash: 900, dashSpeed: 6 }, (u) => this.alt(u));
     this.N = 2600;
     const r = rng(23);
@@ -363,7 +366,7 @@ export class Monarchs extends Migration {
         P0: latLonToVec(lat, lon),
         P1: latLonToVec(31 + gauss(r) * 2.2, -97.8 + gauss(r) * 2.5),
         P2: latLonToVec(site[0] + gauss(r) * 0.05, site[1] + gauss(r) * 0.05),
-        d: r() * 0.28, ph: r() * 100, flap: 18 + r() * 14, w: gauss(r),
+        d: r() * 0.28, ph: r() * 100, flap: 7 + r() * 5, w: gauss(r),
       };
     });
     this.cloud = new PointCloud(this.N, { minPx: 1 });
@@ -391,8 +394,8 @@ export class Monarchs extends Migration {
       const flap = Math.abs(Math.sin(time * q.flap + q.ph));
       const gen = spring ? Math.min(3, Math.floor((1 - ui) * 3.2)) : 3;
       const c = GEN[gen];
-      const alpha = (0.45 + 0.75 * flap) * (roost > 0.5 ? 0.55 + sunny * 0.6 : 1.1);
-      this.cloud.set(i, _v, 0.0019 * (0.45 + 0.55 * flap), alpha, c[0], c[1], c[2]);
+      const alpha = (0.7 + 0.35 * flap) * (roost > 0.5 ? 0.55 + sunny * 0.6 : 1.0);
+      this.cloud.set(i, _v, 0.0019 * (0.75 + 0.25 * flap), alpha, c[0], c[1], c[2]);
     }
     this.cloud.commit();
   }
@@ -448,6 +451,7 @@ export class Swallows extends Migration {
   constructor(sp) {
     super(sp);
     this.addRouteLine({ width: 1.1, base: 0.06, trail: 0.16, dash: 500, dashSpeed: 3 }, () => 1.003);
+    this.farFade = 0.3;
     this.N = 1100;
     this.T = 3; // head + two trailing samples give each bird a short streak
     const r = rng(83);
@@ -529,6 +533,7 @@ export class Buzzards extends Migration {
   constructor(sp) {
     super(sp);
     this.addRouteLine({ width: 1.1, base: 0.07, trail: 0.14, dash: 160, dashSpeed: 0.8 }, () => 1.003);
+    this.farFade = 0.45;
     this.N = 760;
     const r = rng(113);
     this.p = Array.from({ length: this.N }, () => ({ s: r(), g: gauss(r), h: gauss(r), ph: r() * 6.283, cw: r() > 0.5 ? 1 : -1 }));
@@ -588,6 +593,7 @@ export class HouseMartins extends Migration {
   constructor(sp) {
     super(sp);
     this.addRouteLine({ width: 1.1, base: 0.06, trail: 0.15, dash: 420, dashSpeed: 2.6 }, () => 1.006);
+    this.farFade = 0.45;
     this.N = 1000;
     const r = rng(131);
     this.p = Array.from({ length: this.N }, (_, i) => {

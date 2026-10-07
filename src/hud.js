@@ -9,6 +9,12 @@ const sv = (tag, attrs = {}, parent) => { const e = document.createElementNS(SVG
 const TAU = Math.PI * 2;
 const nf = new Intl.NumberFormat('en-US');
 const easeOutExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+/** set an attribute only when its value changes (avoids needless re-rasterisation) */
+function setA(e, k, v) {
+  const c = e.__a || (e.__a = {});
+  if (c[k] !== v) { c[k] = v; e.setAttribute(k, v); }
+}
 
 function splitChars(node, text) {
   node.innerHTML = '';
@@ -72,27 +78,54 @@ export class Hud {
       const lead = sv('path', { class: 'leader' }, g);
       return { sp, l, g, ring, ring2, core, lead, meta: l.querySelector('.l-meta'), x: 0, y: 0, a: 0 };
     });
+    // one shared label for the crowded Europe–Mediterranean region
+    const gl = el('div', 'label group');
+    gl.innerHTML = `<div class="l-num"><span class="g-count"></span> migrations</div><div class="l-name">Europe &amp; Mediterranean</div><div class="g-dots"></div><div class="g-names"></div>`;
+    gl.addEventListener('click', (e) => { if (!e.target.closest('button')) gl.classList.toggle('open'); });
+    gl.addEventListener('mouseleave', () => gl.classList.remove('open'));
+    wrap.appendChild(gl);
+    this.grp = { l: gl, lead: sv('path', { class: 'leader' }, beac), key: '', x: 0, y: 0, w: 220, h: 70,
+      count: gl.querySelector('.g-count'), dots: gl.querySelector('.g-dots'), names: gl.querySelector('.g-names') };
+    this.inEU = SPECIES.map(() => false);
+  }
+  /** rebuild the group's dots and names only when its membership changes */
+  setGroupMembers(ids) {
+    const key = ids.join(',');
+    if (key === this.grp.key) return;
+    this.grp.key = key;
+    this.grp.count.textContent = String(ids.length).padStart(2, '0');
+    this.grp.dots.innerHTML = '';
+    this.grp.names.innerHTML = '';
+    for (const id of ids) {
+      const sp = SPECIES.find((x) => x.id === id);
+      const d = el('i'); d.style.setProperty('--c', sp.css); this.grp.dots.appendChild(d);
+      const b = el('button', '', `${sp.name} <small>${sp.index}</small>`);
+      b.style.setProperty('--c', sp.css);
+      b.addEventListener('mouseenter', () => this.app.setHover(id));
+      b.addEventListener('mouseleave', () => this.app.setHover(null));
+      b.addEventListener('click', () => { this.grp.l.classList.remove('open'); this.app.select(id); });
+      this.grp.names.appendChild(b);
+    }
   }
   buildRing() {
     const back = $('ring-back'), front = $('ring-front');
     this.rb = {
       line: sv('path', { class: 'ring-line', opacity: 0.16 }, back),
       line2: sv('path', { class: 'ring-line', opacity: 0.07 }, back),
-      ticks: sv('path', { class: 'ring-tick', opacity: 0.12 }, back),
       bands: SPECIES.map((sp) => sv('path', { class: 'ring-band', stroke: sp.css, 'stroke-width': 1.5, opacity: 0.22 }, back)),
     };
     this.rf = {
       line: sv('path', { class: 'ring-line', opacity: 0.5 }, front),
       line2: sv('path', { class: 'ring-line', opacity: 0.16 }, front),
-      ticks: sv('path', { class: 'ring-tick', opacity: 0.45 }, front),
       bands: SPECIES.map((sp) => sv('path', { class: 'ring-band', stroke: sp.css, 'stroke-width': 1.6, opacity: 0.85 }, front)),
       playhead: sv('path', { class: 'playhead', opacity: 0.7 }, front),
       bead: sv('circle', { class: 'sun-bead', r: 3.5, filter: 'url(#glow)' }, front),
       beadRing: sv('circle', { class: 'beacon-ring', r: 9, stroke: '#fff3dd', opacity: 0.5 }, front),
     };
-    this.months = MON3.map((m) => sv('text', { class: 'ring-month' }, front));
-    this.months.forEach((t, i) => (t.textContent = m3(i)));
-    function m3(i) { return MON3[i]; }
+    this.ticks = Array.from({ length: 52 }, () => sv('line', { class: 'ring-tick' }, front));
+    this.months = MON3.map((m) => sv('text', { class: 'ring-month', x: 0, y: 0 }, front));
+    this.months.forEach((t, i) => (t.textContent = MON3[i]));
+    this.ringFront = front; this.ringBack = back;
     // ticker
     const defs = document.querySelector('#hud-svg defs');
     const mask = sv('mask', { id: 'ticker-mask', maskUnits: 'userSpaceOnUse' }, defs);
@@ -228,37 +261,40 @@ export class Hud {
 
     // globe mask
     const mc = $('globe-mask-circle');
-    mc.setAttribute('cx', gx.toFixed(1)); mc.setAttribute('cy', gy.toFixed(1)); mc.setAttribute('r', (gr * 1.005).toFixed(1));
+    setA(mc, 'cx', gx.toFixed(1)); setA(mc, 'cy', gy.toFixed(1)); setA(mc, 'r', (gr * 1.005).toFixed(1));
 
-    // ring lines
-    this.rb.line.setAttribute('d', this.arcPath(1, Math.PI, TAU));
-    this.rf.line.setAttribute('d', this.arcPath(1, 0, Math.PI));
-    this.rb.line2.setAttribute('d', this.arcPath(1.22, Math.PI, TAU));
-    this.rf.line2.setAttribute('d', this.arcPath(1.22, 0, Math.PI));
-    // ticks: weekly minor, monthly major
-    let dF = '', dB = '';
+    // ring lines (unchanged paths are not rewritten)
+    setA(this.rb.line, 'd', this.arcPath(1, Math.PI, TAU));
+    setA(this.rf.line, 'd', this.arcPath(1, 0, Math.PI));
+    setA(this.rb.line2, 'd', this.arcPath(1.22, Math.PI, TAU));
+    setA(this.rf.line2, 'd', this.arcPath(1.22, 0, Math.PI));
+    // ticks: weekly minor, monthly major; opacity follows depth continuously,
+    // so nothing pops when a tick rounds the side of the orbit
     for (let k = 0; k < 52; k++) {
       const m = (k / 52) * 12;
       const th = this.thetaOf(m, t);
       const major = Math.abs(m - Math.round(m)) < 0.12;
-      const [x0, y0, z] = this.ringPt(th, 1);
+      const [x0, y0] = this.ringPt(th, 1);
       const [x1, y1] = this.ringPt(th, major ? 1.07 : 1.03);
-      const s = `M${x0.toFixed(1)} ${y0.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}`;
-      if (Math.sin(th) >= 0) dF += s; else dB += s;
+      const ln = this.ticks[k], front = Math.sin(th);
+      const parent = front >= 0 ? this.ringFront : this.ringBack;
+      if (ln.parentNode !== parent) parent.appendChild(ln);
+      setA(ln, 'x1', x0.toFixed(1)); setA(ln, 'y1', y0.toFixed(1));
+      setA(ln, 'x2', x1.toFixed(1)); setA(ln, 'y2', y1.toFixed(1));
+      setA(ln, 'opacity', (0.1 + 0.38 * ss(-0.35, 0.7, front)).toFixed(3));
     }
-    this.rf.ticks.setAttribute('d', dF); this.rb.ticks.setAttribute('d', dB);
-    // month labels
+    // month labels: fixed font size, perspective via transform (no per-frame re-hinting)
     const fontBase = mobile ? 9 : 11;
     this.months.forEach((tx, i) => {
       const th = this.thetaOf(i + 0.5, t);
-      const [x, y, z, s] = this.ringPt(th, 1.14);
+      const [x, y, , s] = this.ringPt(th, 1.14);
       const front = Math.sin(th);
-      const inside = Math.hypot(x - gx, y - gy) < gr && front < 0;
-      tx.setAttribute('x', x.toFixed(1)); tx.setAttribute('y', y.toFixed(1));
-      tx.setAttribute('font-size', (fontBase * s).toFixed(2));
+      const behind = front < 0 ? 1 - ss(gr * 0.9, gr * 1.1, Math.hypot(x - gx, y - gy)) : 0;
       const near = 1 - clamp(Math.abs(fract((i + 0.5 - t) / 12 + 0.5) - 0.5) * 12 / 1.2);
-      tx.setAttribute('opacity', (inside ? 0.05 : front >= 0 ? 0.35 + 0.65 * front : 0.16 + 0.1 * (1 + front)).toFixed(2));
-      tx.style.fill = near > 0.3 ? '#fff3dd' : '';
+      const op = Math.max((0.16 + 0.84 * ss(-0.3, 1, front)) * (1 - 0.8 * behind), near * 0.95);
+      setA(tx, 'font-size', String(fontBase));
+      setA(tx, 'transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${s.toFixed(3)})`);
+      setA(tx, 'opacity', op.toFixed(3));
     });
     // species season bands (where each species is in transit)
     SPECIES.forEach((sp, k) => {
@@ -268,8 +304,8 @@ export class Hud {
       const rs = sel ? 0.9 : 0.93 - k * 0.026;
       let dFront = '', dBack = '';
       let penF = false, penB = false;
-      for (let i = 0; i <= 120; i++) {
-        const m = (i / 120) * 12;
+      for (let i = 0; i <= 240; i++) {
+        const m = (i / 240) * 12;
         const v = Math.abs(mig.uAt(m + 0.05) - mig.uAt(m - 0.05)) / 0.1;
         const th = this.thetaOf(m, t);
         const on = v > 0.025;
@@ -280,11 +316,11 @@ export class Hud {
         if (on && !fr) { dBack += (penB ? 'L' : 'M') + seg; penB = true; } else penB = false;
       }
       const hi = f.hoverId === sp.id ? 1 : 0;
-      this.rf.bands[k].setAttribute('d', dFront);
-      this.rb.bands[k].setAttribute('d', dBack);
-      this.rf.bands[k].setAttribute('opacity', (show * (0.55 + hi * 0.45) * f.reveal).toFixed(2));
-      this.rb.bands[k].setAttribute('opacity', (show * 0.2 * f.reveal).toFixed(2));
-      this.rf.bands[k].setAttribute('stroke-width', sel ? 3 : hi ? 2.4 : 1.4);
+      setA(this.rf.bands[k], 'd', dFront);
+      setA(this.rb.bands[k], 'd', dBack);
+      setA(this.rf.bands[k], 'opacity', (show * (0.55 + hi * 0.45) * f.reveal).toFixed(2));
+      setA(this.rb.bands[k], 'opacity', (show * 0.2 * f.reveal).toFixed(2));
+      setA(this.rf.bands[k], 'stroke-width', String(sel ? 3 : hi ? 2.4 : 1.4));
     });
     // playhead + sun bead at the front
     const [px0, py0] = this.ringPt(Math.PI / 2, 0.84);
@@ -297,7 +333,8 @@ export class Hud {
     const day = Math.floor(fract(t / 12) * 365) + 1;
     const date = dateOf(t);
     this.nowEl.style.transform = `translate(${px1.toFixed(1)}px, ${(py1 + 6).toFixed(1)}px) translateX(-50%)`;
-    this.nowEl.textContent = `${date.d} ${MONTHS[date.m]} · day ${String(day).padStart(3, '0')}`;
+    const nowTxt = `${date.d} ${MONTHS[date.m]} · day ${String(day).padStart(3, '0')}`;
+    if (this.nowEl.textContent !== nowTxt) this.nowEl.textContent = nowTxt;
     $('ring-back').style.opacity = $('ring-front').style.opacity = f.reveal;
     this.nowEl.style.opacity = f.reveal;
 
@@ -305,8 +342,9 @@ export class Hud {
     if (this.focusSp) {
       const mig = f.migs[SPECIES.indexOf(this.focusSp)];
       $('band-path').setAttribute('d', this.arcPath(0.78, Math.PI * 0.82, Math.PI * 0.18, 60));
-      this.bandTP.textContent = `${mig.phase[2]} — ${mig.phase[3]}`;
-      this.bandTP.setAttribute('font-size', 15);
+      const bt = `${mig.phase[2]} — ${mig.phase[3]}`;
+      if (this.bandTP.textContent !== bt) this.bandTP.textContent = bt;
+      setA(this.bandTP, 'font-size', '15');
       $('band-text').style.fill = this.focusSp.css;
     }
 
@@ -322,6 +360,7 @@ export class Hud {
       this.updateTelemetry(f);
       // measure text blocks off the hot path (avoids per-frame forced layout)
       for (const L of this.labels) L.w = L.l.offsetWidth;
+      if (this.grp) { this.grp.w = this.grp.l.offsetWidth || 220; this.grp.h = this.grp.l.offsetHeight || 70; }
       for (const c of Object.values(this.co)) { c.w = c.c.offsetWidth; c.h = c.c.offsetHeight; }
     }
     const m = Math.floor(fract(t / 12) * 12);
@@ -388,16 +427,60 @@ export class Hud {
       let dx = pr.x - gx, dy = pr.y - gy;
       const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
       const reach = 54 + (hi ? 8 : 0);
-      items.push({ L, pr, vis, hi, dx, dy, x: pr.x + dx * reach, y: pr.y + dy * reach * 0.7 - 10 });
+      // region membership with a 1.5° hysteresis margin so species don't flicker in and out
+      const ll = vecToLatLon(mig.head);
+      const m = this.inEU[i] ? -1.5 : 1.5;
+      this.inEU[i] = ll.lat > 28 + m && ll.lat < 62 - m && ll.lon > -12 + m && ll.lon < 42 - m;
+      items.push({ L, pr, vis, hi, dx, dy, x: pr.x + dx * reach, y: pr.y + dy * reach * 0.7 - 10, eu: this.inEU[i] });
     });
-    // simple vertical de-overlap
-    items.sort((a, b) => a.y - b.y);
-    for (let k = 1; k < items.length; k++) {
-      const a = items[k - 1], b = items[k];
-      if (a.vis > 0.05 && b.vis > 0.05 && Math.abs(a.x - b.x) < 180 && b.y - a.y < 54) b.y = a.y + 54;
+    const members = items.filter((it) => it.eu && it.vis > 0.05);
+    const grouped = members.length >= 2;
+    const G = this.grp;
+    let gItem = null;
+    if (grouped) {
+      this.setGroupMembers(members.map((it) => it.L.sp.id));
+      let cx = 0, cy = 0, gv = 0;
+      for (const it of members) { cx += it.pr.x; cy += it.pr.y; gv = Math.max(gv, it.vis); }
+      cx /= members.length; cy /= members.length;
+      let dx = cx - gx, dy = cy - gy;
+      const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+      gItem = { group: true, vis: gv, dx, dy, cx, cy, x: cx + dx * 90, y: cy + dy * 70 - 10 };
+      for (const it of members) it.hidden = true;
+      items.push(gItem);
+    }
+    // simple vertical de-overlap (the group label is taller)
+    const live = items.filter((it) => !it.hidden).sort((a, b) => a.y - b.y);
+    for (let k = 1; k < live.length; k++) {
+      const a = live[k - 1], b = live[k];
+      const gap = a.group ? G.h * 0.5 + 30 : b.group ? G.h * 0.5 + 30 : 54;
+      if (a.vis > 0.05 && b.vis > 0.05 && Math.abs(a.x - b.x) < 200 && b.y - a.y < gap) b.y = a.y + gap;
+    }
+    // the group label, with thin leaders fanning in from each member beacon
+    if (gItem) {
+      const left = gItem.dx < 0;
+      const tx = left ? Math.max(gItem.x, G.w + 8) : Math.min(gItem.x, W - G.w - 8);
+      const ty = clamp(gItem.y, 70, H - 160);
+      G.x = lerp(G.x || tx, tx, 0.2); G.y = lerp(G.y || ty, ty, 0.2);
+      G.l.classList.toggle('left', left);
+      G.l.style.transform = `translate(${G.x.toFixed(1)}px, ${G.y.toFixed(1)}px) translate(${left ? '-100%' : '0'}, -50%)`;
+      G.l.style.opacity = gItem.vis;
+      G.l.style.pointerEvents = gItem.vis > 0.3 ? 'auto' : 'none';
+      const hubX = G.x + (left ? 12 : -12), hubY = G.y;
+      let d = '';
+      for (const it of members) d += `M${(it.pr.x + it.dx * 6).toFixed(1)} ${(it.pr.y + it.dy * 6).toFixed(1)}L${hubX.toFixed(1)} ${hubY.toFixed(1)}`;
+      d += `M${hubX.toFixed(1)} ${hubY.toFixed(1)}L${(hubX + (left ? -6 : 6)).toFixed(1)} ${hubY.toFixed(1)}`;
+      setA(G.lead, 'd', d);
+      setA(G.lead, 'opacity', (gItem.vis * 0.35).toFixed(2));
+    } else {
+      G.l.style.opacity = 0;
+      G.l.style.pointerEvents = 'none';
+      G.l.classList.remove('open');
+      setA(G.lead, 'opacity', '0');
     }
     for (const it of items) {
-      const { L, pr, vis, hi, dx } = it;
+      if (it.group) continue;
+      const { L, pr, hi, dx } = it;
+      const vis = it.hidden ? 0 : it.vis;
       const left = dx < 0;
       const lw = L.w || 120;
       const tx = left ? Math.max(it.x, lw + 8) : Math.min(it.x, W - lw - 8);
@@ -515,11 +598,11 @@ export class Hud {
   /* sightings ticker that runs along the front of the orbit */
   updateTicker(f) {
     const path = $('ticker-path');
-    path.setAttribute('d', this.arcPath(1.3, Math.PI, 0, 80));
+    setA(path, 'd', this.arcPath(1.3, Math.PI, 0, 80));
     const { cx, R } = this.ring;
-    this.fadeGrad.setAttribute('x1', cx - R * 1.3); this.fadeGrad.setAttribute('x2', cx + R * 1.3);
-    this.tickerMaskRect.setAttribute('x', cx - R * 1.6); this.tickerMaskRect.setAttribute('width', R * 3.2);
-    this.tickerMaskRect.setAttribute('y', this.ring.cy - R); this.tickerMaskRect.setAttribute('height', R * 2.4);
+    setA(this.fadeGrad, 'x1', (cx - R * 1.3).toFixed(1)); setA(this.fadeGrad, 'x2', (cx + R * 1.3).toFixed(1));
+    setA(this.tickerMaskRect, 'x', (cx - R * 1.6).toFixed(1)); setA(this.tickerMaskRect, 'width', (R * 3.2).toFixed(1));
+    setA(this.tickerMaskRect, 'y', (this.ring.cy - R).toFixed(1)); setA(this.tickerMaskRect, 'height', (R * 2.4).toFixed(1));
     const len = path.getTotalLength ? path.getTotalLength() : 1000;
     this.tickerScroll += f.dt * (this.W < 820 ? 34 : 46);
     const tp = this.tickerTP;
