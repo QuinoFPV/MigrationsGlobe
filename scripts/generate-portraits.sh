@@ -24,9 +24,10 @@ gen martin "Common house martins at their mud nests under the stone cornice of a
 gen egret "A great white egret standing in shallow misty estuary water at dawn, long neck in an S-curve, delicate breeding plumes, reflections on still water, reeds silhouetted behind, cold blue and pale gold light"
 gen starling "A vast murmuration of starlings forming a swirling dark shape in the dusk sky above the domes and rooftops of Rome, St Peter's dome silhouetted, pink and violet sunset, the River Tiber below"
 gen eel "A European eel swimming through dark deep blue ocean water, silvery sinuous body catching a faint shaft of light, tiny transparent glass eels drifting around it, mysterious deep-sea atmosphere, underwater photography"
+gen blackbird "A male Eurasian blackbird singing on a mossy stone wall at dusk, glossy black plumage, bright orange beak and eye-ring, rain-wet green Basque countryside and a white farmhouse softly blurred behind"
 wait
 
-for id in whale tern wildebeest monarch caribou swallow tuna buzzard martin egret starling eel; do
+for id in whale tern wildebeest monarch caribou swallow tuna buzzard martin egret starling eel blackbird; do
   sips -s format jpeg -s formatOptions 82 -Z 1200 "assets-src/$id.png" --out "public/img/$id.jpg" >/dev/null
 done
 echo "Plates written to public/img/"

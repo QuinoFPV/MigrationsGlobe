@@ -815,4 +815,51 @@ export class Eels extends Migration {
   }
 }
 
-export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins, egret: Egrets, starling: Starlings, eel: Eels };
+/* ───────────────────────────── Blackbirds (night migrants) ───────────────────────────── */
+export class Blackbirds extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.1, base: 0.06, trail: 0.16, dash: 200, dashSpeed: 0.9 }, () => 1.003);
+    const r = rng(197);
+    this.N = 900; this.B = 260;
+    this.p = Array.from({ length: this.N }, () => ({ s: r(), g: gauss(r), h: gauss(r), ph: r() * 100 }));
+    this.q = Array.from({ length: this.B }, () => ({ s: r(), g: gauss(r), ph: r() * 6.283 }));
+    this.birds = new PointCloud(this.N, { minPx: 1 });
+    this.echo = new PointCloud(this.B, { minPx: 2 });
+    this.group.add(this.echo.points, this.birds.points);
+    this.clouds.push(this.birds, this.echo);
+    this.hf = { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+    this.sun = new THREE.Vector3(1, 0, 0);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, t = st.time, mv = this.mv, dir = this.dir;
+    if (st.sun) this.sun.copy(st.sun);
+    const head = this.route.frame(u, this.hf);
+    const night = (v) => smooth(clamp((0.08 - v.dot(this.sun)) / 0.25)); // 1 on the night side
+    // birds: a broad front by night, scattered in gardens and woods by day or at rest
+    for (let i = 0; i < this.N; i++) {
+      const q = this.p[i];
+      this.route.frame(u - q.s * 0.1 * dir, _f);
+      _v.copy(_f.p).addScaledVector(_f.s, q.g * 0.028 + Math.sin(t * 0.7 + q.ph) * 0.002).normalize().multiplyScalar(1.004);
+      const hop = Math.max(0, Math.sin(t * 0.8 + q.ph)) ** 12 * 0.0012;
+      _w.copy(head.p).addScaledVector(head.s, q.g * 0.034 + hop).addScaledVector(head.t, q.h * 0.034).normalize().multiplyScalar(1.0012);
+      _v.lerp(_w, 1 - mv);
+      const nf = night(_v) * mv;
+      this.birds.set(i, _v, 0.0015, 0.25 + 0.85 * nf, 1.0, lerp(0.75, 0.9, nf), lerp(0.2, 0.4, nf));
+    }
+    this.birds.commit();
+    // weather-radar echoes: soft blooms that light up only where the passage is at night
+    for (let k = 0; k < this.B; k++) {
+      const q = this.q[k];
+      this.route.frame(u - q.s * 0.1 * dir, _f);
+      _v.copy(_f.p).addScaledVector(_f.s, q.g * 0.024).normalize().multiplyScalar(1.004);
+      const sweep = 0.55 + 0.45 * Math.sin(t * 1.4 - q.s * 9 + q.ph);
+      const a = night(_v) * mv * 0.26 * sweep;
+      this.echo.set(k, _v, 0.009 + q.s * 0.006, a, 1.0, 0.85, 0.35);
+    }
+    this.echo.commit();
+  }
+}
+
+export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins, egret: Egrets, starling: Starlings, eel: Eels, blackbird: Blackbirds };

@@ -511,6 +511,45 @@ export const SPECIES = [
     labelAngle: 0,
     blurb: 'Every European eel is born in the Sargasso Sea, crosses the Atlantic as a see-through larva, spends years in a river like the Tiber, then swims 6,000 km back to spawn and die. No one has ever seen it spawn.',
   },
+  {
+    id: 'blackbird',
+    index: '13',
+    name: 'Blackbird',
+    latin: 'Turdus merula',
+    stock: 'Scandinavian & Baltic migrants',
+    color: [1.0, 0.82, 0.25],
+    css: '#ffd23f',
+    portrait: 'img/blackbird.jpg',
+    verb: 'night passage',
+    route: [[59.4, 18.0], [55.6, 12.9], [52.5, 8.6], [49.2, 3.2], [45.8, -0.4], [43.3, -2.9], [42.3, -1.2], [44.6, 3.1], [48.2, 7.8], [52.2, 12.4], [55.6, 15.4], [58.2, 19.6]],
+    keys: [[0, 0.48], [2.2, 0.485], [2.5, 0.585], [2.8, 0.692], [3.0, 0.803], [3.2, 0.888], [3.4, 1.0], [9.4, 1.0], [9.7, 1.105], [10.0, 1.193], [10.4, 1.299], [10.8, 1.392], [11.1, 1.46], [11.4, 1.48], [12, 1.48]],
+    phases: [
+      [0, 2.2, 'Wintering', 'Gardens and hedges of the Basque Country'],
+      [2.2, 3.4, 'Northbound', 'Night flights back across France'],
+      [3.4, 9.4, 'Breeding', 'Singing from Scandinavian spruce tops'],
+      [9.4, 11.4, 'Southbound', 'Night-time passage over Falsterbo'],
+      [11.4, 12, 'Wintering', 'Settling into gardens in northern Spain'],
+    ],
+    ends: [
+      { u: 0, title: 'Breeding woods', place: 'Southern Sweden & the Baltic', window: 'APR — SEP' },
+      { u: 0.48, title: 'Winter gardens', place: 'Basque Country & Navarre', window: 'DEC — FEB' },
+    ],
+    distanceKm: 2200,
+    distanceNote: 'one way · flying only at night',
+    population: 20000000,
+    popNote: 'est. northern birds wintering in SW Europe',
+    trend: 'stable',
+    status: 'LC',
+    statusNote: 'Least Concern; one of Europe’s commonest birds',
+    threats: ['Cats and window strikes in towns', 'Usutu virus outbreaks', 'Thrush hunting in southern Europe', 'Light pollution disorienting night flights'],
+    medium: 'air',
+    observers: ['Weather radar, Bilbao', 'Nocturnal flight-call recorder', 'Falsterbo Bird Observatory', 'eBird checklist', 'Ringing station Ottenby', 'Urdaibai Bird Center'],
+    unit: 'blackbirds',
+    countRange: [1, 2500],
+    focus: { lat: 51, lon: 8, alt: 1.0, tilt: 12, k: 0.85, fov: 33, sun: 64 },
+    labelAngle: 0,
+    blurb: 'The bird singing on your roof may be a local, but the one in your garden in January could be from Sweden. Northern blackbirds migrate only at night, and on weather radar their passage blooms like rain.',
+  },
 ];
 
 export const STATUS_SCALE = ['LC', 'NT', 'VU', 'EN', 'CR'];
@@ -535,6 +574,11 @@ export function conditionsAt(sp, lat, t) {
     const temp = 31 - Math.max(0, a - 20) * 0.6 + season * 7;
     const desert = a > 14 && a < 31;
     return { label: 'Air temperature', value: `${temp.toFixed(0)}°C`, extra: desert ? `Sahara crossing · headwind ${(12 + (m * 5) % 11).toFixed(0)} km/h` : 'Insect swarms over water' };
+  }
+  if (sp.id === 'blackbird') {
+    const passage = (m > 9.4 && m < 11.4) || (m > 2.2 && m < 3.4);
+    const calls = passage ? Math.round(120 + ((m * 613) % 380)) : Math.round(2 + ((m * 37) % 9));
+    return { label: 'Night flight calls', value: `${calls} / hour`, extra: passage ? 'Broad-front passage on weather radar' : 'Resting by day in hedgerows' };
   }
   if (sp.id === 'starling') {
     const roost = Math.abs(lat - 41.9) < 1.2;

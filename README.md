@@ -1,6 +1,6 @@
 # The Great Migrations
 
-An interactive 3D atlas that follows twelve animal migrations through one year: humpback whales, arctic terns, wildebeest, monarch butterflies, caribou, barn swallows, Atlantic bluefin tuna, honey buzzards, house martins, great white egrets, the starlings of Rome and the European eel. The globe, the routes, the animals and all the animation are generated in code with three.js and GLSL. The only bitmaps are the twelve documentary "plates" generated through Codex.
+An interactive 3D atlas that follows thirteen animal migrations through one year: humpback whales, arctic terns, wildebeest, monarch butterflies, caribou, barn swallows, Atlantic bluefin tuna, honey buzzards, house martins, great white egrets, the starlings of Rome, the European eel and the blackbird. The globe, the routes, the animals and all the animation are generated in code with three.js and GLSL. The only bitmaps are the thirteen documentary "plates" generated through Codex.
 
 ```bash
 npm install
@@ -40,6 +40,7 @@ The year starts on today's date.
   - **Great white egrets:** slow, widely spaced V-skeins with a wave of wingbeats running down each line, from Lake Neusiedl via the Po Delta, Camargue and Urdaibai to Doñana and Morocco. At rest they stand still in shallow water at wetland sites, with the odd short hop.
   - **Starlings of Rome:** dense flocks pour south from the Baltic, then become one murmuration over Rome all winter. It is a glowing sheet that folds into travelling S-bends, pinches, flattens and turns, with density waves rippling through it.
   - **European eel:** a lifetime folded into one year, drawn in three stages. A long, pale band of larvae drifts on the Gulf Stream, sharpens into sparkling glass eels entering the Mediterranean and the Tiber, and returns as undulating silver eels that swirl in the Sargasso Sea to spawn. It is the only Critically Endangered species on the globe.
+  - **Blackbird:** northern blackbirds migrate only at night, so the flock and its soft weather-radar echoes light up only on the night side of the terminator and dim by day, from southern Sweden to Basque gardens.
 - **Post** (`src/post.js`): bloom, a golden-angle bokeh focus pull that tracks the subject (it racks during camera moves), the time-lapse streak, chromatic fringe, vignette and luma-weighted grain.
 - **Typography is in the scene.** There are no panels. Labels hang on leader lines from projected positions, and the route name is set along the projected route itself. Callouts anchor to the herd and to the route ends and avoid each other. Titles assemble letter by letter.
 
@@ -47,7 +48,7 @@ Dev tools: `window.__migrations` exposes live state. `__migrations.app.select('t
 
 ## Data
 
-All figures are **plausible composites grounded in published behaviour**, not live data. Routes follow documented corridors (Southeast Pacific humpback Stock G, Greenland arctic terns, the Serengeti–Mara circuit, the eastern monarch flyway, the Porcupine caribou herd, Italian barn swallows wintering in West Africa, the eastern Atlantic bluefin stock, the Messina honey-buzzard flyway, Italian house-martin colonies, the central-European great-egret flyway, the Baltic-to-Rome starling flyway, and the eel's Sargasso–Mediterranean cycle). See `src/data.js`.
+All figures are **plausible composites grounded in published behaviour**, not live data. Routes follow documented corridors (Southeast Pacific humpback Stock G, Greenland arctic terns, the Serengeti–Mara circuit, the eastern monarch flyway, the Porcupine caribou herd, Italian barn swallows wintering in West Africa, the eastern Atlantic bluefin stock, the Messina honey-buzzard flyway, Italian house-martin colonies, the central-European great-egret flyway, the Baltic-to-Rome starling flyway, the eel's Sargasso–Mediterranean cycle, and Scandinavian blackbirds wintering in the Basque Country). See `src/data.js`.
 
 ## Images
 

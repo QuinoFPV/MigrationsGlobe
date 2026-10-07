@@ -60,6 +60,17 @@ export class Hud {
       nav.appendChild(b);
       return { b, bar: b.querySelector('.idx-bar i'), dot: b.querySelector('.idx-bar b'), phase: b.querySelector('.idx-phase') };
     });
+    // fade the edges that still have species beyond them
+    this.nav = nav;
+    const edges = () => {
+      const vertical = nav.scrollHeight > nav.clientHeight + 2;
+      nav.classList.toggle('can-up', vertical && nav.scrollTop > 2);
+      nav.classList.toggle('can-down', vertical && nav.scrollTop + nav.clientHeight < nav.scrollHeight - 2);
+    };
+    nav.addEventListener('scroll', edges, { passive: true });
+    addEventListener('resize', edges);
+    requestAnimationFrame(edges);
+    this.navEdges = edges;
   }
   buildLabels() {
     const wrap = $('labels'), beac = $('beacons');
@@ -400,7 +411,9 @@ export class Hud {
       it.bar.style.width = `${(p * 100).toFixed(1)}%`;
       it.dot.style.left = `${(p * 100).toFixed(1)}%`;
       it.phase.textContent = `${m.phase[2]}${m.mv > 0.3 ? ' ' + (m.dir > 0 ? '→' : '←') : ''}`;
-      it.b.classList.toggle('hi', f.hoverId === m.sp.id);
+      const isHi = f.hoverId === m.sp.id;
+      if (isHi && !it.b.classList.contains('hi') && !it.b.matches(':hover')) it.b.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      it.b.classList.toggle('hi', isHi);
       const L = this.labels[i];
       L.meta.textContent = `${m.phase[2]} · ${Math.round(p * 100)}%`;
     });
@@ -624,7 +637,7 @@ export class Hud {
     const k = SPECIES.findIndex((s) => s.id === id);
     const sp = SPECIES[k], mig = f.migs[k];
     const loc = mig.sample ? mig.sample() : mig.head.clone();
-    const spread = { whale: 1.6, tern: 3, wildebeest: 0.25, monarch: 0.6, caribou: 0.4, swallow: 1.4, tuna: 0.8, buzzard: 0.9, martin: 1.2, egret: 0.5, starling: 0.3, eel: 2 }[id] ?? 1;
+    const spread = { whale: 1.6, tern: 3, wildebeest: 0.25, monarch: 0.6, caribou: 0.4, swallow: 1.4, tuna: 0.8, buzzard: 0.9, martin: 1.2, egret: 0.5, starling: 0.3, eel: 2, blackbird: 0.8 }[id] ?? 1;
     const ll = vecToLatLon(loc);
     ll.lat += (Math.random() - 0.5) * spread; ll.lon += (Math.random() - 0.5) * spread;
     const [a, b] = sp.countRange;
