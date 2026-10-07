@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SphereRoute, keyframeU, latLonToVec, rng, gauss, clamp, smooth, fract, lerp } from './geo.js';
+import { SphereRoute, keyframeU, latLonToVec, vecToLatLon, rng, gauss, clamp, smooth, fract, lerp } from './geo.js';
 import { PointCloud, Ribbon, sampleRoute } from './gfx.js';
 import { phaseAt } from './data.js';
 
@@ -862,4 +862,135 @@ export class Blackbirds extends Migration {
   }
 }
 
-export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins, egret: Egrets, starling: Starlings, eel: Eels, blackbird: Blackbirds };
+/* ───────────────────────────── Polar bears ───────────────────────────── */
+export class PolarBears extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1.1, base: 0.05, trail: 0.15, dash: 120, dashSpeed: 0.4 }, () => 1.0008);
+    this.farFade = 0.6;
+    const r = rng(211);
+    this.N = 70; this.T = 26;
+    this.b = Array.from({ length: this.N }, () => ({ s: r(), g: gauss(r), h: gauss(r), ph: r() * 100, sp: 0.5 + r(), hist: [], pos: new THREE.Vector3(), init: false }));
+    this.cloud = new PointCloud(this.N * (1 + this.T), { minPx: 1 });
+    this.group.add(this.cloud.points);
+    this.clouds.push(this.cloud);
+    this.hf = { p: new THREE.Vector3(), t: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+    this.cape = latLonToVec(58.78, -93.2);
+    this.cA = new THREE.Vector3(0, 1, 0).cross(this.cape.clone().normalize()).normalize();
+    this.cB = new THREE.Vector3().crossVectors(this.cape.clone().normalize(), this.cA);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const u = this.u, t = st.time, m = ((st.t % 12) + 12) % 12;
+    const head = this.route.frame(u, this.hf);
+    // how much of the bay is frozen (matches the shader's season curve)
+    const ice = m < 8.5 ? 1 - smooth(clamp((m - 5.4) / 1.8)) : smooth(clamp((m - 10.6) / 1.1));
+    const waiting = smooth(clamp((m - 9.6) / 0.8)) * (1 - smooth(clamp((m - 11.0) / 0.5)));
+    const spread = lerp(0.006, 0.05, ice);
+    for (let i = 0; i < this.N; i++) {
+      const q = this.b[i];
+      // wandering across the ice, hugging the coast ashore
+      const wx = Math.sin(t * 0.05 * q.sp + q.ph) * 0.6 + q.g, wy = Math.cos(t * 0.04 * q.sp + q.ph * 1.3) * 0.6 + q.h;
+      this.route.frame(u - q.s * lerp(0.02, 0.12, ice), _f);
+      _v.copy(_f.p).addScaledVector(_f.s, wx * spread).addScaledVector(_f.t, wy * spread * 0.6);
+      // late autumn: everyone converges on Cape Churchill
+      _w.copy(this.cape).addScaledVector(this.cA, q.g * 0.006).addScaledVector(this.cB, q.h * 0.004);
+      _v.lerp(_w, waiting * 0.85).normalize().multiplyScalar(1.0008);
+      if (!q.init) { q.pos.copy(_v); q.init = true; }
+      q.pos.lerp(_v, 1 - Math.exp(-st.dt * 2));
+      // pawprints: a fading trail behind each bear
+      const h = q.hist;
+      if (!h.length || h[0].distanceToSquared(q.pos) > 4e-7) { h.unshift(q.pos.clone()); if (h.length > this.T) h.pop(); }
+      const base = i * (1 + this.T);
+      this.cloud.set(base, q.pos, 0.0022, 1.0, 0.95, 1.0, 1.0);
+      for (let k = 0; k < this.T; k++) {
+        const p = h[Math.min(k + 1, h.length - 1)] || q.pos;
+        const f = 1 - k / this.T;
+        this.cloud.set(base + 1 + k, p, 0.0008, 0.35 * f * f * (0.4 + 0.6 * ice), 0.75, 0.95, 1.0);
+      }
+    }
+    this.cloud.commit();
+  }
+}
+
+/* ───────────────────────────── Christmas Island red crabs ───────────────────────────── */
+const XMAS = latLonToVec(-10.49, 105.63);
+
+export class RedCrabs extends Migration {
+  constructor(sp) {
+    super(sp);
+    this.addRouteLine({ width: 1, base: 0.02, trail: 0.08, dash: 40, dashSpeed: 0.3 }, () => 1.00002);
+    const r = rng(227);
+    this.N = 9000;
+    this.c = Array.from({ length: this.N }, () => ({ a: r() * 6.283, r0: Math.sqrt(r()) * 0.85, d: r() * 0.3, ph: r() * 100, g: r() }));
+    this.crabs = new PointCloud(this.N, { minPx: 0.8, shape: 'hard', blending: THREE.NormalBlending });
+    this.L = 2400;
+    this.l = Array.from({ length: this.L }, () => ({ a: r() * 6.283, life: r(), sp: 0.5 + r() }));
+    this.larvae = new PointCloud(this.L, { minPx: 0.8 });
+    this.group.add(this.crabs.points, this.larvae.points);
+    this.clouds.push(this.crabs, this.larvae);
+    const n = XMAS.clone().normalize();
+    this.east = new THREE.Vector3(0, 1, 0).cross(n).normalize();
+    this.north = new THREE.Vector3().crossVectors(n, this.east);
+    this.Rx = 0.0016; this.Ry = 0.0012; // the island, roughly 19 × 14 km
+    this.coast = null; // radius of the real coastline per angle, in ellipse units
+  }
+  /** march outward along each bearing on the hi-res land mask to find the real shore */
+  setCoast(isLand) {
+    const n = 240, out = new Float32Array(n);
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      let r = 0.05;
+      for (; r < 1.8; r += 0.01) {
+        this.at(a, r, _v, 0, false);
+        const ll = vecToLatLon(_v);
+        if (!isLand(ll.lat, ll.lon)) break;
+      }
+      out[k] = r;
+    }
+    // light smoothing so the shoreline isn't jagged
+    this.coast = out.map((v, k) => (out[(k + n - 1) % n] + 2 * v + out[(k + 1) % n]) / 4);
+  }
+  at(a, r, out, lift = 0.00002, useCoast = true) {
+    let R = 1;
+    if (useCoast && this.coast) {
+      const n = this.coast.length, x = ((a / (Math.PI * 2)) % 1 + 1) % 1 * n, i = Math.floor(x) % n;
+      R = lerp(this.coast[i], this.coast[(i + 1) % n], x - Math.floor(x));
+    }
+    return out.copy(XMAS).addScaledVector(this.east, Math.cos(a) * r * R * this.Rx).addScaledVector(this.north, Math.sin(a) * r * R * this.Ry)
+      .normalize().multiplyScalar(1 + lift);
+  }
+  update(st) {
+    this.baseUpdate(st);
+    const t = st.time, m = ((st.t % 12) + 12) % 12, fu = fract(this.u);
+    // 0 = forest plateau, 1 = on the shore
+    const march = fu < 0.38 ? fu / 0.38 : fu < 0.42 ? 1 : 1 - (fu - 0.42) / 0.58;
+    for (let i = 0; i < this.N; i++) {
+      const q = this.c[i];
+      const p = smooth(clamp((march - q.d) / 0.7));
+      const shoreR = 0.93 + Math.sin(q.a * 7 + q.ph) * 0.03;
+      const r = lerp(q.r0, shoreR, p) + Math.sin(t * 0.6 + q.ph) * 0.004;
+      const a = q.a + Math.sin(t * 0.3 + q.ph) * 0.004;
+      this.at(a, r, _v);
+      const red = 0.75 + q.g * 0.25;
+      this.crabs.set(i, _v, 0.000022, 0.92, red, 0.12 + q.g * 0.08, 0.08);
+    }
+    this.crabs.commit();
+    // spawning at the last-quarter moon: larvae pour off the shore into the sea; a month later juveniles return
+    const spawn = smooth(clamp((m - 10.8) / 0.2)) * (1 - smooth(clamp((m - 11.6) / 0.2)));
+    const juveniles = m < 0.7 ? smooth(clamp(m / 0.15)) * (1 - smooth(clamp((m - 0.5) / 0.2))) : 0;
+    for (let k = 0; k < this.L; k++) {
+      const q = this.l[k];
+      q.life += st.dt * 0.25 * q.sp;
+      if (q.life > 1) { q.life = 0; q.a = Math.random() * 6.283; }
+      const out = spawn > 0 ? 0.95 + q.life * 0.7 : 1.6 - q.life * 0.65;
+      this.at(q.a, out, _v, 0.00003);
+      const a = spawn > 0 ? spawn * Math.sin(q.life * Math.PI) * 0.8 : juveniles * Math.sin(q.life * Math.PI) * 0.7;
+      if (spawn > 0) this.larvae.set(k, _v, 0.000012, a, 0.95, 0.98, 1.0);
+      else this.larvae.set(k, _v, 0.000012, a, 1.0, 0.35, 0.25);
+    }
+    this.larvae.commit();
+  }
+}
+
+export const CLASSES = { whale: Whales, tern: Terns, wildebeest: Wildebeest, monarch: Monarchs, caribou: Caribou, swallow: Swallows, tuna: Tuna, buzzard: Buzzards, martin: HouseMartins, egret: Egrets, starling: Starlings, eel: Eels, blackbird: Blackbirds, bear: PolarBears, crab: RedCrabs };

@@ -121,7 +121,16 @@ void main() {
   vec3 ocean = mix(deep, shallow, smoothstep(0.08, 0.7, shelf) * 0.9);
   float seaIceN = smoothstep(mix(81.0, 68.0, iceN) - 2.0, mix(81.0, 68.0, iceN) + 2.0, latD + (micro - 0.5) * 6.0);
   float seaIceS = smoothstep(-mix(68.0, 58.0, iceS) + 2.0, -mix(68.0, 58.0, iceS) - 2.0, latD + (micro - 0.5) * 6.0);
-  float seaIce = max(seaIceN, seaIceS);
+  // Hudson Bay: freezes outward from Churchill in November, melts last in the south-west in July
+  vec2 hBay = vec2((latD - 58.6) / 7.8, (lonD + 85.0) / 12.0);
+  float inBay = 1.0 - smoothstep(0.82, 1.0, length(hBay));
+  float bayFrz = m < 8.5 ? 1.0 - smoothstep(5.4, 7.2, m) : smoothstep(10.6, 11.7, m);
+  float cosL = cos(lat);
+  float gNW = distance(vec2(lonD * cosL, latD), vec2(-94.0 * cosL, 59.0)) / 11.0;
+  float gSW = distance(vec2(lonD * cosL, latD), vec2(-90.0 * cosL, 56.0)) / 12.0;
+  float iceFront = m < 8.5 ? gSW : gNW;
+  float iceH = inBay * smoothstep(iceFront - 0.08, iceFront + 0.02, bayFrz * 1.25 + (micro - 0.5) * 0.25);
+  float seaIce = max(max(seaIceN, seaIceS), iceH);
   ocean = mix(ocean, vec3(0.36, 0.42, 0.5) * (0.7 + 0.4 * micro), seaIce * 0.9);
 
   vec3 surf = mix(ocean, col, land);
@@ -258,9 +267,9 @@ const vec4 DESERTS[10] = vec4[10](
   vec4(23.0, 10.0, 9.0, 26.0), vec4(23.0, 47.0, 8.0, 12.0), vec4(30.0, 63.0, 6.0, 10.0), vec4(41.0, 95.0, 5.0, 18.0),
   vec4(-23.0, 20.0, 6.0, 7.0), vec4(-25.0, 131.0, 8.0, 13.0), vec4(-22.0, -69.5, 6.0, 2.0), vec4(32.0, -112.0, 5.0, 6.0),
   vec4(-45.0, -68.0, 6.0, 3.5), vec4(44.0, 62.0, 4.0, 12.0));
-const vec4 FORESTS[6] = vec4[6](
+const vec4 FORESTS[7] = vec4[7](
   vec4(-5.0, -62.0, 10.0, 14.0), vec4(0.0, 21.0, 6.0, 10.0), vec4(2.0, 110.0, 9.0, 18.0), vec4(13.0, -87.0, 6.0, 6.0),
-  vec4(-3.0, 140.0, 6.0, 10.0), vec4(-20.0, -45.0, 6.0, 6.0));
+  vec4(-3.0, 140.0, 6.0, 10.0), vec4(-20.0, -45.0, 6.0, 6.0), vec4(-10.5, 105.6, 1.2, 1.2));
 float region(vec4 r, float la, float lo) {
   float dlo = mod(lo - r.y + 540.0, 360.0) - 180.0;
   vec2 d = vec2((la - r.x) / r.z, dlo / r.w);
@@ -300,7 +309,7 @@ void main() {
   vec3 n = vec3(cos(la) * sin(lo), sin(la), cos(la) * cos(lo));
   float dry = 0.0, wet = 0.0;
   for (int i = 0; i < 10; i++) dry = max(dry, region(DESERTS[i], latD, lonD));
-  for (int i = 0; i < 6; i++) wet = max(wet, region(FORESTS[i], latD, lonD));
+  for (int i = 0; i < 7; i++) wet = max(wet, region(FORESTS[i], latD, lonD));
   gl_FragColor = vec4(dry, wet, mountainMask(latD, lonD), fbm(n * 5.0));
 }`;
 

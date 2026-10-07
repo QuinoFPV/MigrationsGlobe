@@ -550,10 +550,88 @@ export const SPECIES = [
     labelAngle: 0,
     blurb: 'The bird singing on your roof may be a local, but the one in your garden in January could be from Sweden. Northern blackbirds migrate only at night, and on weather radar their passage blooms like rain.',
   },
+  {
+    id: 'bear',
+    index: '14',
+    name: 'Polar Bear',
+    latin: 'Ursus maritimus',
+    stock: 'Western Hudson Bay subpopulation',
+    color: [0.85, 1.0, 0.98],
+    css: '#d9fffb',
+    portrait: 'img/bear.jpg',
+    verb: 'ice walk',
+    route: [[58.85, -93.0], [60.2, -90.6], [61.7, -87.2], [60.8, -83.6], [58.6, -84.4], [57.2, -87.4], [57.25, -91.4], [57.6, -92.6], [58.25, -93.3], [58.78, -93.6]],
+    keys: [[0, 0.13], [1.5, 0.27], [3.0, 0.4], [4.5, 0.55], [5.8, 0.69], [6.6, 0.843], [8.0, 0.89], [9.2, 0.94], [10.0, 0.98], [10.8, 1.0], [11.4, 1.06], [12, 1.13]],
+    phases: [
+      [0, 5.4, 'On the sea ice', 'Hunting ringed seals across the frozen bay'],
+      [5.4, 6.6, 'Break-up', 'Riding the last floes to the south-west shore'],
+      [6.6, 9.8, 'Summer fast', 'Months ashore with almost no food'],
+      [9.8, 10.8, 'Waiting', 'Gathering at Cape Churchill for the freeze'],
+      [10.8, 12, 'Freeze-up', 'Back out onto the new ice'],
+    ],
+    ends: [
+      { u: 0, title: 'Freeze-up gathering', place: 'Cape Churchill, Manitoba', window: 'OCT — NOV' },
+      { u: 0.843, title: 'Summer landfall', place: 'Wapusk coast, Hudson Bay', window: 'JUL — SEP' },
+    ],
+    distanceKm: 3000,
+    distanceNote: 'per year · walking and drifting on sea ice',
+    population: 618,
+    popNote: 'bears in Western Hudson Bay (2021 aerial survey)',
+    trend: '−27% since 2016',
+    status: 'VU',
+    statusNote: 'Vulnerable: the ice season is shrinking',
+    threats: ['Earlier break-up and later freeze-up', 'Longer fasting season ashore', 'Human–bear conflict around Churchill', 'Pollutants in the Arctic food web'],
+    medium: 'land',
+    observers: ['Polar Bear Alert, Churchill', 'Collar fix PB-', 'Wapusk aerial survey', 'Tundra buggy log', 'Polar Bears International cam', 'Sea-ice camera, Cape Churchill'],
+    unit: 'bears',
+    countRange: [1, 40],
+    focus: { lat: 59.3, lon: -88, alt: 0.85, tilt: 14, k: 0.85, fov: 33, sun: 8 },
+    labelAngle: 0,
+    blurb: 'A polar bear is a marine mammal that walks. In Western Hudson Bay it hunts seals from the winter ice, then spends the ice-free months fasting ashore, waiting at Cape Churchill for the bay to freeze again.',
+  },
+  {
+    id: 'crab',
+    index: '15',
+    name: 'Christmas Island Red Crab',
+    latin: 'Gecarcoidea natalis',
+    stock: 'Christmas Island, Indian Ocean',
+    color: [1.0, 0.23, 0.18],
+    css: '#ff3b2f',
+    portrait: 'img/crab.jpg',
+    verb: 'march',
+    route: [[-10.49, 105.62], [-10.455, 105.655], [-10.43, 105.672], [-10.445, 105.70], [-10.475, 105.68]],
+    keys: [[0, 0.88], [0.6, 1.0], [9.6, 1.0], [10.8, 1.38], [11.6, 1.4], [12, 1.88]],
+    phases: [
+      [0, 0.6, 'Return', 'Tiny juveniles climb up from the sea'],
+      [0.6, 9.6, 'Forest floor', 'Recycling leaf litter on the plateau'],
+      [9.6, 10.8, 'The march', 'Tens of millions pour down to the coast'],
+      [10.8, 11.6, 'Spawning', 'Eggs released at the last-quarter moon'],
+      [11.6, 12, 'Return', 'Adults climb back to the forest'],
+    ],
+    ends: [
+      { u: 0, title: 'Rainforest plateau', place: 'Christmas Island interior', window: 'JAN — OCT' },
+      { u: 0.38, title: 'Spawning shore', place: 'Flying Fish Cove & Ethel Beach', window: 'NOV — DEC' },
+    ],
+    distanceKm: 8,
+    distanceNote: 'one way · forest to sea, on foot',
+    population: 50000000,
+    popNote: 'est. adult red crabs on the island',
+    trend: 'stable · crazy ants under control',
+    status: 'NE',
+    statusNote: 'Not evaluated by IUCN; protected by the national park',
+    threats: ['Yellow crazy ant supercolonies', 'Road kill during the march', 'Drier, later wet seasons', 'Other invasive species'],
+    medium: 'land',
+    observers: ['Parks Australia ranger', 'Road closure crew, Drumsite', 'Crab bridge camera', 'Spawning count, Ethel Beach', 'Resident report #', 'Larval tow survey'],
+    unit: 'crabs',
+    countRange: [100, 200000],
+    focus: { lat: -10.545, lon: 105.62, alt: 0.0115, tilt: 28, k: 1, fov: 34, sun: 35 },
+    labelAngle: 0,
+    blurb: 'Once a year, timed by the rains and the moon, around fifty million red crabs leave the rainforest of a tiny Indian Ocean island and march to the sea. Roads close, and the island turns red.',
+  },
 ];
 
 export const STATUS_SCALE = ['LC', 'NT', 'VU', 'EN', 'CR'];
-export const STATUS_NAME = { LC: 'Least Concern', NT: 'Near Threatened', VU: 'Vulnerable', EN: 'Endangered', CR: 'Critically Endangered' };
+export const STATUS_NAME = { NE: 'Not Evaluated', LC: 'Least Concern', NT: 'Near Threatened', VU: 'Vulnerable', EN: 'Endangered', CR: 'Critically Endangered' };
 
 export function phaseAt(sp, t) {
   t = ((t % 12) + 12) % 12;
@@ -574,6 +652,16 @@ export function conditionsAt(sp, lat, t) {
     const temp = 31 - Math.max(0, a - 20) * 0.6 + season * 7;
     const desert = a > 14 && a < 31;
     return { label: 'Air temperature', value: `${temp.toFixed(0)}°C`, extra: desert ? `Sahara crossing · headwind ${(12 + (m * 5) % 11).toFixed(0)} km/h` : 'Insect swarms over water' };
+  }
+  if (sp.id === 'bear') {
+    const frz = m < 8.5 ? 1 - Math.min(1, Math.max(0, (m - 5.4) / 1.8)) : Math.min(1, Math.max(0, (m - 10.6) / 1.1));
+    const ice = Math.round(frz * 96);
+    return { label: 'Sea-ice cover', value: `${ice}%`, extra: ice > 50 ? 'Ringed seals hauled out on the ice' : `Fasting ashore · day ${Math.max(1, Math.round((m - 6.6) * 30.4))}` };
+  }
+  if (sp.id === 'crab') {
+    const wet = m > 9.5 || m < 3.5;
+    const moon = ['New moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous', 'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'][Math.floor(((m * 30.44) % 29.53) / 29.53 * 8)];
+    return { label: wet ? 'Wet season' : 'Dry season', value: wet ? `${Math.round(180 + ((m * 71) % 160))} mm/mo` : `${Math.round(30 + ((m * 13) % 40))} mm/mo`, extra: `${moon} · humid forest floor` };
   }
   if (sp.id === 'blackbird') {
     const passage = (m > 9.4 && m < 11.4) || (m > 2.2 && m < 3.4);

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { geoEquirectangular, geoPath } from 'd3-geo';
+import { geoEquirectangular, geoPath, geoArea } from 'd3-geo';
 import { feature } from 'topojson-client';
 import land50 from 'world-atlas/land-50m.json';
 
@@ -26,9 +26,9 @@ const RIVERS = [
 
 const landGeo = feature(land50, land50.objects.land);
 
-function drawWorld(ctx, path, project, lineScale) {
+function drawWorld(ctx, path, project, lineScale, geo = landGeo) {
   ctx.fillStyle = '#fff';
-  ctx.beginPath(); path(landGeo); ctx.fill();
+  ctx.beginPath(); path(geo); ctx.fill();
   ctx.fillStyle = '#000';
   for (const lake of LAKES) {
     // smooth closed curve through the waypoints
@@ -91,6 +91,24 @@ function flipRows(data, W, H) {
   return out;
 }
 
+/** Natural Earth 1:10m land, loaded only when a close-up needs it */
+let land10 = null;
+export async function loadLand10m() {
+  if (!land10) {
+    const topo = (await import('world-atlas/land-10m.json')).default;
+    land10 = feature(topo, topo.objects.land);
+    // some 1:10m rings are wound the "wrong" way for d3 and would read as the whole globe minus
+    // the polygon; flip any polygon larger than a hemisphere
+    const fix = (poly) => (geoArea({ type: 'Polygon', coordinates: poly }) > 2 * Math.PI ? poly.map((ring) => ring.slice().reverse()) : poly);
+    for (const f of land10.features || [land10]) {
+      const g = f.geometry;
+      if (g.type === 'Polygon') g.coordinates = fix(g.coordinates);
+      else if (g.type === 'MultiPolygon') g.coordinates = g.coordinates.map(fix);
+    }
+  }
+  return land10;
+}
+
 /** Global equirectangular land field: R sharp, G coastal shelf, B continentality. */
 export function buildGlobalMask(W = 4096) {
   const H = W / 2;
@@ -105,7 +123,7 @@ export function buildGlobalMask(W = 4096) {
 }
 
 /** High-res regional patch for close-ups. bounds = [lonMin, latMin, lonMax, latMax]. */
-export function buildPatch(bounds, W = 2048) {
+export function buildPatch(bounds, W = 2048, geo = landGeo) {
   const [x0, y0, x1, y1] = bounds;
   const midLat = ((y0 + y1) / 2) * Math.PI / 180;
   const lonSpan = x1 - x0, latSpan = y1 - y0;
@@ -115,14 +133,22 @@ export function buildPatch(bounds, W = 2048) {
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   const s = W / (lonSpan * Math.PI / 180);
-  const proj = geoEquirectangular().scale(s).translate([-s * x0 * Math.PI / 180, s * y1 * Math.PI / 180]).precision(0.05);
   const rawH = s * latSpan * Math.PI / 180;
+  // clip to the patch first: at island scale, distant continents would project to huge coordinates
+  const proj = geoEquirectangular().scale(s).translate([-s * x0 * Math.PI / 180, s * y1 * Math.PI / 180]).precision(0.05)
+    .clipExtent([[-4, -4], [W + 4, rawH + 4]]);
   ctx.save();
   ctx.scale(1, H / rawH);
-  drawWorld(ctx, geoPath(proj, ctx), proj, W / lonSpan);
+  drawWorld(ctx, geoPath(proj, ctx), proj, W / lonSpan, geo);
   ctx.restore();
   const data = pack(W, H, [channelCanvas(cv, 0), channelCanvas(cv, 4)]);
   const tex = makeTex(flipRows(data, W, H), W, H);
   tex.wrapS = THREE.ClampToEdgeWrapping;
+  // land lookup for code that needs the real coastline (rows run south → north)
+  tex.isLand = (lat, lon) => {
+    const x = Math.floor(((lon - x0) / lonSpan) * W), y = Math.floor(((lat - y0) / latSpan) * H);
+    if (x < 0 || y < 0 || x >= W || y >= H) return false;
+    return tex.image.data[(y * W + x) * 4] > 127;
+  };
   return tex;
 }

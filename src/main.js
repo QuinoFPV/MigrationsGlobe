@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SPECIES } from './data.js';
-import { buildGlobalMask, buildPatch } from './landmask.js';
+import { buildGlobalMask, buildPatch, loadLand10m } from './landmask.js';
 import { createEarth, createStars, createSunGlare } from './earth.js';
 import { CLASSES } from './species.js';
 import { PointCloud, Ribbon } from './gfx.js';
@@ -40,12 +40,24 @@ const byId = Object.fromEntries(migs.map((m) => [m.sp.id, m]));
 const post = createPost(renderer, scene, camera);
 
 /* high-res terrain patches for the close-ups, built lazily */
-const PATCH_BOUNDS = { wildebeest: [31.2, -4.6, 38.4, 0.9], caribou: [-156, 63.2, -128, 71.8] };
+const PATCH_BOUNDS = { wildebeest: [31.2, -4.6, 38.4, 0.9], caribou: [-156, 63.2, -128, 71.8], bear: [-97.5, 54.5, -78, 64.5], crab: [105.45, -10.66, 105.84, -10.33] };
+const HIRES = { crab: true }; // tiny islands need the 1:10m coastline
 const patches = {};
 function ensurePatch(id) {
   if (!PATCH_BOUNDS[id]) return null;
-  if (!patches[id]) patches[id] = buildPatch(PATCH_BOUNDS[id], 2048);
-  return patches[id];
+  if (!patches[id]) {
+    if (HIRES[id]) {
+      patches[id] = 'loading';
+      loadLand10m().then((geo) => {
+        patches[id] = buildPatch(PATCH_BOUNDS[id], 2048, geo);
+        byId[id]?.setCoast?.(patches[id].isLand);
+        if (S.focusId === id) { E.uniforms.uPatch.value = patches[id]; E.uniforms.uPatchBounds.value.set(...PATCH_BOUNDS[id]); S.patchId = id; }
+      });
+      return null;
+    }
+    patches[id] = buildPatch(PATCH_BOUNDS[id], 2048);
+  }
+  return patches[id] === 'loading' ? null : patches[id];
 }
 
 /* ───────────── state ───────────── */
@@ -371,7 +383,7 @@ function frame(forced) {
   camera.up.set(0, 1, 0);
   camera.lookAt(target);
   camera.fov = cam.fov;
-  camera.near = clamp((camera.position.length() - 1) * 0.08, 0.0015, 0.2);
+  camera.near = clamp((camera.position.length() - 1) * 0.08, 0.0003, 0.2);
   if (cam.offX > 0.001) camera.setViewOffset(W, H, cam.offX * W, 0, W, H); else camera.clearViewOffset();
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();
@@ -395,7 +407,7 @@ function frame(forced) {
   U.uTime.value = time;
   U.uMonth.value = t;
   U.uReveal.value = S.started ? 0.04 + 0.96 * S.reveal : 0.04;
-  const cloudTarget = S.focusId ? ({ whale: 0.35, tern: 0.45, wildebeest: 0.1, monarch: 0.3, caribou: 0.12, swallow: 0.3, tuna: 0.3, buzzard: 0.32, martin: 0.3, egret: 0.28, starling: 0.25, eel: 0.4, blackbird: 0.3 }[S.focusId] ?? 0.3) : 0.85;
+  const cloudTarget = S.focusId ? ({ whale: 0.35, tern: 0.45, wildebeest: 0.1, monarch: 0.3, caribou: 0.12, swallow: 0.3, tuna: 0.3, buzzard: 0.32, martin: 0.3, egret: 0.28, starling: 0.25, eel: 0.4, blackbird: 0.3, bear: 0.2, crab: 0.12 }[S.focusId] ?? 0.3) : 0.85;
   S.cloudAmt = lerp(S.cloudAmt, cloudTarget, 1 - Math.exp(-dt * 1.2));
   E.cloudUniforms.uAmt.value = S.cloudAmt * (0.3 + 0.7 * S.reveal);
   E.atmoUniforms.uIntensity.value = (S.started ? 0.25 + 0.75 * S.reveal : 0.25) * (1 + Math.sin(time * 0.8) * 0.06);
