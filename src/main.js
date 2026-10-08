@@ -87,6 +87,9 @@ const easeIO4 = (x) => (x < 0.5 ? 8 * x ** 4 : 1 - Math.pow(-2 * x + 2, 4) / 2);
 
 function moveTo(to, dur = 3.2, bump = 0.22) {
   to = { ...to, yaw: cam.yaw + wrapPi(to.yaw - cam.yaw) };
+  // big changes of scale (orbit → a 19 km island) get more time so the eye can follow the dive
+  const ratio = Math.max(cam.alt, to.alt) / Math.max(1e-4, Math.min(cam.alt, to.alt));
+  dur += Math.max(0, Math.log(ratio) - 3) * 0.8;
   anim = { from: { ...cam }, to, t0: S.time, dur, bump };
   vel.yaw = vel.pitch = 0;
 }
@@ -236,7 +239,9 @@ canvas.addEventListener('wheel', (e) => {
   }
   if (anim) return;
   const base = S.focusId ? SPECIES.find((s) => s.id === S.focusId).focus.alt : fitAlt();
-  cam.alt = clamp(cam.alt * Math.exp(e.deltaY * 0.0012), base * (S.focusId ? 0.55 : 0.62), base * (S.focusId ? 2.6 : 1.5));
+  // in a close-up you can always pull back far enough to see the surroundings
+  const maxAlt = S.focusId ? Math.max(base * 2.6, 1.4) : base * 1.5;
+  cam.alt = clamp(cam.alt * Math.exp(e.deltaY * 0.0012), base * (S.focusId ? 0.55 : 0.62), maxAlt);
 }, { passive: false });
 
 function nearestBeacon(x, y) {
@@ -342,11 +347,13 @@ function frame(forced) {
     const p = clamp((time - anim.t0) / anim.dur);
     const a = anim.from, b = anim.to;
     const e1 = easeIO3(clamp(p / 0.82));
-    const e2 = easeIO4(clamp((p - 0.06) / 0.94));
+    const e2 = easeIO3(clamp((p - 0.04) / 0.96));
     const e3 = easeIO3(clamp((p - 0.3) / 0.7));
     cam.yaw = lerp(a.yaw, b.yaw, e1);
     cam.pitch = lerp(a.pitch, b.pitch, e1);
-    cam.alt = Math.exp(lerp(Math.log(a.alt), Math.log(b.alt), e2)) * (1 + anim.bump * Math.sin(Math.PI * p));
+    // zoom evenly in log space; skip the pull-back bump for very deep dives
+    const deep = clamp(Math.log(Math.max(a.alt, b.alt) / Math.min(a.alt, b.alt)) / 4 - 0.5);
+    cam.alt = Math.exp(lerp(Math.log(a.alt), Math.log(b.alt), e2)) * (1 + anim.bump * (1 - deep) * Math.sin(Math.PI * p));
     cam.k = lerp(a.k, b.k, e3);
     cam.tilt = lerp(a.tilt, b.tilt, e3);
     cam.fov = lerp(a.fov, b.fov, e2) + Math.sin(Math.PI * p) * 3.5;
@@ -369,10 +376,13 @@ function frame(forced) {
 
   // breathing: the globe leans toward the pointer even when untouched
   const pn = S.pointerNdc || [0, 0];
-  const lean = S.focusId ? 0.012 : 0.06;
+  // the globe leans and breathes in proportion to how far away we are, so close-ups stay steady
+  const surfDist = Math.max(0.0005, camera.position.length() - 1);
+  const fxScale = clamp(surfDist / 2.5, 0.01, 1);
+  const lean = (S.focusId ? 0.012 : 0.06) * fxScale;
   breathe.x = lerp(breathe.x, pn[0] * lean, 1 - Math.exp(-dt * 1.8));
   breathe.y = lerp(breathe.y, -pn[1] * lean * 0.7, 1 - Math.exp(-dt * 1.8));
-  eul.set(cam.pitch + breathe.y + Math.sin(time * 0.31) * 0.004, cam.yaw + breathe.x, 0);
+  eul.set(cam.pitch + breathe.y + Math.sin(time * 0.31) * 0.004 * fxScale, cam.yaw + breathe.x, 0);
   globe.quaternion.setFromEuler(eul);
   globe.scale.setScalar(1 + Math.sin(time * 0.75) * 0.0035 * (1 - S.focusMix));
   globe.updateMatrixWorld(true);
@@ -420,7 +430,11 @@ function frame(forced) {
     const hit = pointerOnGlobe(S.mx, S.my);
     if (hit) {
       const local = globe.worldToLocal(hitW.clone()).normalize();
-      U.uPointer.value.lerp(local, 0.5).normalize();
+      // ease toward the hit point; if the halfway point collapses (jump to the far side) or
+      // anything went non-finite, snap instead of normalising a zero vector into NaN
+      const P = U.uPointer.value;
+      P.lerp(local, 0.5);
+      if (P.lengthSq() < 1e-6 || !Number.isFinite(P.x + P.y + P.z)) P.copy(local); else P.normalize();
       pAmt = 1;
       const ll = vecToLatLon(local);
       const dayside = local.dot(sunLocal) > 0;
@@ -428,6 +442,7 @@ function frame(forced) {
       cursorEl.style.transform = `translate(${S.mx + 18}px, ${S.my + 14}px)`;
     }
   }
+  U.uPointerScale.value = clamp((camera.position.length() - 1) / 3.6, 0.003, 1);
   U.uPointerAmt.value = lerp(U.uPointerAmt.value, pAmt * (ptr && ptr.mode === 'drag' ? 0.5 : 1), 1 - Math.exp(-dt * 6));
   cursorEl.classList.toggle('on', pAmt > 0 && !S.warping);
   warpEl.classList.toggle('on', S.warp > 0.05);

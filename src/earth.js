@@ -23,6 +23,7 @@ uniform float uTime;
 uniform float uMonth;
 uniform vec3 uPointer;
 uniform float uPointerAmt;
+uniform float uPointerScale;
 uniform float uReveal;
 uniform float uNightGrid;
 varying vec3 vPos;
@@ -185,10 +186,10 @@ void main() {
   color += cyan * grat * 0.012 * day; // faint survey grid by day
 
   // pointer reticle
-  float pd = distance(n, uPointer);
+  float pd = distance(n, uPointer) / uPointerScale; // reticle keeps its screen size at any zoom
   float halo = exp(-pd * pd / 0.0035) * uPointerAmt;
-  float ring = (1.0 - smoothstep(0.0, fp * 1.5, abs(pd - 0.055))) * uPointerAmt;
-  float ring2 = (1.0 - smoothstep(0.0, fp * 1.2, abs(pd - 0.075))) * uPointerAmt * step(0.5, fract(atan(n.y - uPointer.y, n.x - uPointer.x) * 6.0 / PI));
+  float ring = (1.0 - smoothstep(0.0, fp * 1.5 / uPointerScale, abs(pd - 0.055))) * uPointerAmt;
+  float ring2 = (1.0 - smoothstep(0.0, fp * 1.2 / uPointerScale, abs(pd - 0.075))) * uPointerAmt * step(0.5, fract(atan(n.y - uPointer.y, n.x - uPointer.x) * 6.0 / PI));
   color += vec3(1.0, 0.85, 0.6) * halo * 0.12 + cyan * (ring * 0.5 + ring2 * 0.25);
 
   color *= uReveal;
@@ -349,6 +350,7 @@ export function createEarth(landTex, renderer) {
     uMonth: { value: 0 },
     uPointer: { value: new THREE.Vector3(0, 0, 1) },
     uPointerAmt: { value: 0 },
+    uPointerScale: { value: 1 },
     uReveal: { value: 0 },
     uNightGrid: { value: 1 },
   };

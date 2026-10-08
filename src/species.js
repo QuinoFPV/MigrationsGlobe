@@ -973,7 +973,7 @@ export class RedCrabs extends Migration {
       const a = q.a + Math.sin(t * 0.3 + q.ph) * 0.004;
       this.at(a, r, _v);
       const red = 0.75 + q.g * 0.25;
-      this.crabs.set(i, _v, 0.000022, 0.92, red, 0.12 + q.g * 0.08, 0.08);
+      this.crabs.set(i, _v, 0.00003, 0.92, red, 0.12 + q.g * 0.08, 0.08);
     }
     this.crabs.commit();
     // spawning at the last-quarter moon: larvae pour off the shore into the sea; a month later juveniles return

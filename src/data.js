@@ -624,7 +624,7 @@ export const SPECIES = [
     observers: ['Parks Australia ranger', 'Road closure crew, Drumsite', 'Crab bridge camera', 'Spawning count, Ethel Beach', 'Resident report #', 'Larval tow survey'],
     unit: 'crabs',
     countRange: [100, 200000],
-    focus: { lat: -10.545, lon: 105.62, alt: 0.0115, tilt: 28, k: 1, fov: 34, sun: 35 },
+    focus: { lat: -10.53, lon: 105.62, alt: 0.021, tilt: 24, k: 1, fov: 34, sun: 35 },
     labelAngle: 0,
     blurb: 'Once a year, timed by the rains and the moon, around fifty million red crabs leave the rainforest of a tiny Indian Ocean island and march to the sea. Roads close, and the island turns red.',
   },
